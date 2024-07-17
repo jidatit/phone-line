@@ -70,9 +70,8 @@ const Layout = () => {
     };
 
     const menuItems = [
-        { label: 'Activate Line', path: '/user_portal' },
-        { label: 'Reports', path: '/user_portal/reports' },
-        { label: 'Billing', path: '/user_portal/billing' },
+        { label: 'All Users', path: '/admin_portal' },
+        { label: 'Payments', path: '/admin_portal/payments' },
     ];
 
     return (
@@ -102,7 +101,7 @@ const Layout = () => {
                                 {item.label}
                             </h1>
                         ))}
-                        <h1
+                        <h1 
                             onClick={handleOpenLogout}
                             className="flex justify-start items-center w-[80%] py-2 px-4 text-white hover:bg-[#180926] font-semibold rounded text-base gap-2 cursor-pointer" >
                             Logout
@@ -145,7 +144,7 @@ const Layout = () => {
                             >
                                 {showNameInMenu && <MenuItem className='gap-2' > <AccountBoxOutlinedIcon /> Full Name </MenuItem>}
                                 <MenuItem className='gap-2' > <LockResetOutlinedIcon /> Profile </MenuItem>
-                                <MenuItem onClick={handleOpenLogout}  className='gap-2' > <LogoutOutlinedIcon /> Logout</MenuItem>
+                                <MenuItem onClick={handleOpenLogout} className='gap-2' > <LogoutOutlinedIcon /> Logout</MenuItem>
                             </Menu>
                         </div>
                     </div>
@@ -174,6 +173,7 @@ const Layout = () => {
 
                     </Box>
                 </Modal>
+
             </div>
         </>
     );

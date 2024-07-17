@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import AuthLayout from './auth/Layout';
@@ -11,8 +11,9 @@ import UserActivateLine from './user_portal/pages/ActivateLine';
 import UserReports from './user_portal/pages/Reports';
 import UserBilling from './user_portal/pages/Billing';
 
-// import AdminLayout from './admin_portal/Layout';
-// import AdminDashbaordUsers from './admin_portal/pages/Users';
+import AdminLayout from './admin_portal/Layout';
+import AdminAllUsers from './admin_portal/pages/AllUsers'
+import AdminPayments from './admin_portal/pages/Payments'
 
 function App() {
 
@@ -33,9 +34,10 @@ function App() {
             <Route path='billing' element={<UserBilling/>} />
           </Route>
 
-          {/* <Route path='/admin_portal' element={<AdminLayout />}>
-            <Route index element={<AdminDashbaordUsers />} />
-          </Route> */}
+          <Route path='/admin_portal' element={<AdminLayout />}>
+            <Route index element={<AdminAllUsers />} />
+            <Route path='payments' element={<AdminPayments/>} />
+          </Route>
 
         </Routes>
       </Router>
