@@ -6,11 +6,7 @@ import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { StaticDateTimePicker } from '@mui/x-date-pickers/StaticDateTimePicker';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const style = {
     position: 'absolute',
@@ -101,26 +97,31 @@ const ReportsTable = () => {
             number: '+12363758568',
             purchaseDate: '12/06/2022',
             expireDate: '06/08/2023',
+            currentBalance: 300,
             status: 'Activated',
         }, {
             number: '+12363758568',
             purchaseDate: '12/06/2022',
             expireDate: '06/08/2023',
+            currentBalance: 340,
             status: 'Pending',
         }, {
             number: '+12363758568',
             purchaseDate: '12/06/2022',
             expireDate: '06/08/2023',
+            currentBalance: 426,
             status: 'Pending',
         }, {
             number: '+12363758568',
             purchaseDate: '12/06/2022',
             expireDate: '06/08/2023',
+            currentBalance: 120,
             status: 'Activated',
         }, {
             number: '+12363758568',
             purchaseDate: '12/06/2022',
             expireDate: '06/08/2023',
+            currentBalance: 180,
             status: 'Pending',
         }];
         try {
@@ -226,14 +227,9 @@ const ReportsTable = () => {
 
     return (
         <>
-            <div className='w-full h-16 flex flex-row justify-between items-center mb-3'>
-                <h1 className="text-black text-xl font-bold">All Numbers Made</h1>
-                <button className="flex justify-center items-center gap-2 px-8 py-3 bg-[#340068] text-white rounded-md text-base font-medium">
-                    Activate a New Number
-                    <AddOutlinedIcon />
-                </button>
+            <div className='w-full flex flex-row justify-between items-center mb-8'>
+                <h1 className="text-black text-xl font-bold">Billing</h1>
             </div>
-
 
             <div className='w-full flex flex-col justify-center items-center'>
                 <div className='w-full h-16 flex flex-row justify-end items-center rounded-t-lg pr-10 bg-[#340068]'>
@@ -306,8 +302,11 @@ const ReportsTable = () => {
                                     <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
                                         Purchase Date
                                     </th>
-                                    <th className="py-3 px-3 justify-center gap-1 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
                                         Expiration Date
+                                    </th>
+                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+                                        Current Balance
                                     </th>
                                     <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
                                         Status
@@ -356,6 +355,16 @@ const ReportsTable = () => {
                                             {!data?.expireDate ? <div> - </div> : <div>{data.expireDate}</div>}
                                         </td>
                                         <td
+                                            className={`py-2 px-3 font-normal text-base ${index == 0
+                                                ? "border-t-2 border-gray-300"
+                                                : index == rowsToShow?.length
+                                                    ? "border-y"
+                                                    : "border-t"
+                                                } whitespace-nowrap`}
+                                        >
+                                            {!data?.currentBalance ? <div> - </div> : <div> ${data.currentBalance}</div>}
+                                        </td>
+                                        <td
                                             className={`py-2 px-3 text-base  font-normal ${index == 0
                                                 ? "border-t-2 border-gray-300"
                                                 : index == rowsToShow?.length
@@ -387,7 +396,7 @@ const ReportsTable = () => {
                                             <button
                                                 onClick={handleOpenExtendExpirationDate}
                                                 className="bg-[#FF6978] rounded-3xl text-white py-1 px-4">
-                                                Extend Expiration Date
+                                                    Add Funds to Account
                                             </button>
                                         </td>
                                     </tr>
@@ -516,14 +525,12 @@ const ReportsTable = () => {
                             <div id="modal-data" className="w-full h-full flex flex-col justify-start items-center gap-3" >
 
                                 <div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5" >
-                                    <h2 className="text-xl font-bold"> Extend Expiration Date </h2>
+                                    <h2 className="text-xl font-bold"> Payment Method </h2>
                                 </div>
 
                                 <div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5" >
                                     <div className="flex flex-col justify-start items-start gap-2">
-                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                            <StaticDateTimePicker orientation="landscape" />
-                                        </LocalizationProvider>
+                            
                                     </div>
                                 </div>
                             </div>
