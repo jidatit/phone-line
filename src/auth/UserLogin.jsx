@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField } from '@mui/material';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../Firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -13,11 +15,10 @@ const UserLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
+            await signInWithEmailAndPassword(auth, email, password);
             console.log('User Successfully Logged In');
-            toast.success('User Successfully Logged In');
         } catch (error) {
             console.error('Error Logging In User : ', error.message);
-            toast.error('Error Logging In User ');
         }
     };
 

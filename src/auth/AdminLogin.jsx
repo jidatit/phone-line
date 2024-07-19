@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { TextField } from '@mui/material';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../Firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const UserLogin = () => {
 
-    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
+            await signInWithEmailAndPassword(auth, email, password);
             console.log('Admin Successfully Logged In');
-            toast.success('Admin Successfully Logged In');
         } catch (error) {
             console.error('Error Logging In Admin : ', error.message);
-            toast.success('Error Logging In Admin');
         }
     };
+
 
     return (
         <div className='w-full min-h-screen flex flex-col justify-center items-center bg-[#340068]'>

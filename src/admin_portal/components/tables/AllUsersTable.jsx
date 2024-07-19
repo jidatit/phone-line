@@ -9,6 +9,8 @@ import FormControl from '@mui/material/FormControl';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import DoneIcon from '@mui/icons-material/Done';
 import CloseIcon from '@mui/icons-material/Close';
+import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import { db } from '../../../../Firebase';
 
 const style = {
     position: 'absolute',
@@ -24,8 +26,8 @@ const style = {
 };
 
 const AllUsersTable = () => {
-    const [numbersData, setNumbersData] = useState([]);
-    const [filteredNumbersData, setFilteredNumbersData] = useState([]);
+    const [allUsersData, setAllUsersData] = useState([]);
+    const [filteredallUsersData, setFilteredallUsersData] = useState([]);
     const [showOrHideFilters, setShowOrHideFilters] = useState(false);
     const [rowPerPage, setRowPerPage] = useState(10);
     const [rowsToShow, setRowsToShow] = useState([]);
@@ -47,15 +49,30 @@ const AllUsersTable = () => {
         setRowPerPage(event.target.value);
     };
 
+    const fetchAllUsersData = async () => {
+        try {
+            const usersRef = collection(db, 'users');
+            const queryShapshot = await getDocs(usersRef);
+            const usersData = [];
+            queryShapshot.forEach((doc) => {
+                usersData.push({ id: doc.id, ...doc.data() });
+            });
+            console.log( "All Users Data : " ,usersData);
+            setAllUsersData(usersData);
+        } catch (error) {
+            console.error("Error fetching users data : ", error);
+        }
+    }
+
     useEffect(() => {
-        getnumbersData();
+        fetchAllUsersData();
     }, []);
 
     useEffect(() => {
-        setRowsToShow(filteredNumbersData.slice(0, rowPerPage));
-    }, [filteredNumbersData, rowPerPage]);
+        setRowsToShow(filteredallUsersData.slice(0, rowPerPage));
+    }, [filteredallUsersData, rowPerPage]);
 
-    const totalPage = useMemo(() => Math.ceil(filteredNumbersData.length / rowPerPage), [filteredNumbersData.length, rowPerPage]);
+    const totalPage = useMemo(() => Math.ceil(filteredallUsersData.length / rowPerPage), [filteredallUsersData.length, rowPerPage]);
 
     const generatePaginationLinks = () => {
         const paginationLinks = [];
@@ -94,54 +111,54 @@ const AllUsersTable = () => {
         return paginationLinks;
     };
 
-    const getnumbersData = async () => {
-        const dummyData = [{
-            name: 'Muhammad Umar',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 300,
-            status: 'Activated',
-        }, {
-            name: 'Hamza Ali',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 340,
-            status: 'Pending',
-        }, {
-            name: 'Atif Rana',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 426,
-            status: 'Pending',
-        }, {
-            name: 'Muhammad Ahmed',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 120,
-            status: 'Activated',
-        }, {
-            name: 'Mehmood Khan',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 180,
-            status: 'Pending',
-        }];
-        try {
-            setNumbersData(dummyData);
-        } catch (error) {
-            console.error('Error fetching leads modules : ', error);
-        }
-    };
+    // const getallUsersData = async () => {
+    //     const dummyData = [{
+    //         name: 'Muhammad Umar',
+    //         number: '+12363758568',
+    //         purchaseDate: '12/06/2022',
+    //         expireDate: '06/08/2023',
+    //         currentBalance: 300,
+    //         status: 'Activated',
+    //     }, {
+    //         name: 'Hamza Ali',
+    //         number: '+12363758568',
+    //         purchaseDate: '12/06/2022',
+    //         expireDate: '06/08/2023',
+    //         currentBalance: 340,
+    //         status: 'Pending',
+    //     }, {
+    //         name: 'Atif Rana',
+    //         number: '+12363758568',
+    //         purchaseDate: '12/06/2022',
+    //         expireDate: '06/08/2023',
+    //         currentBalance: 426,
+    //         status: 'Pending',
+    //     }, {
+    //         name: 'Muhammad Ahmed',
+    //         number: '+12363758568',
+    //         purchaseDate: '12/06/2022',
+    //         expireDate: '06/08/2023',
+    //         currentBalance: 120,
+    //         status: 'Activated',
+    //     }, {
+    //         name: 'Mehmood Khan',
+    //         number: '+12363758568',
+    //         purchaseDate: '12/06/2022',
+    //         expireDate: '06/08/2023',
+    //         currentBalance: 180,
+    //         status: 'Pending',
+    //     }];
+    //     try {
+    //         setAllUsersData(dummyData);
+    //     } catch (error) {
+    //         console.error('Error fetching leads modules : ', error);
+    //     }
+    // };
 
     const nextPage = () => {
         const startIndex = rowPerPage * (currentPage + 1);
         const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
+        const newArray = filteredallUsersData.slice(startIndex, endIndex);
         setRowsToShow(newArray);
         setCurrentPage(currentPage + 1);
     };
@@ -149,7 +166,7 @@ const AllUsersTable = () => {
     const changePage = (value) => {
         const startIndex = value * rowPerPage;
         const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
+        const newArray = filteredallUsersData.slice(startIndex, endIndex);
         setRowsToShow(newArray);
         setCurrentPage(value);
     };
@@ -157,7 +174,7 @@ const AllUsersTable = () => {
     const previousPage = () => {
         const startIndex = (currentPage - 1) * rowPerPage;
         const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
+        const newArray = filteredallUsersData.slice(startIndex, endIndex);
         setRowsToShow(newArray);
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
@@ -183,7 +200,7 @@ const AllUsersTable = () => {
     }
 
     const applyFilters = () => {
-        let filtered = numbersData;
+        let filtered = allUsersData;
 
         if (filters.fullName) {
             filtered = filtered.filter(item => item.Full_Name.toLowerCase().includes(filters.fullName.toLowerCase()));
@@ -203,7 +220,7 @@ const AllUsersTable = () => {
             return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
 
-        setFilteredNumbersData(filtered);
+        setFilteredallUsersData(filtered);
     };
 
     const handleFilterChange = (event) => {
@@ -230,7 +247,7 @@ const AllUsersTable = () => {
 
     useEffect(() => {
         applyFilters();
-    }, [filters, numbersData]);
+    }, [filters, allUsersData]);
 
     return (
         <>
@@ -454,12 +471,12 @@ const AllUsersTable = () => {
                             to{" "}
                             <span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
                                 {currentPage === totalPage - 1
-                                    ? numbersData?.length
+                                    ? allUsersData?.length
                                     : (currentPage + 1) * rowPerPage}
                             </span>{" "}
                             of{" "}
                             <span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
-                                {numbersData?.length}
+                                {allUsersData?.length}
                             </span>{" "}
                             entries
                         </div>

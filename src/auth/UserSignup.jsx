@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { TextField } from '@mui/material'
+import { auth, db } from '../../Firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from "firebase/firestore";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -24,13 +27,29 @@ const UserSignup = () => {
     const handleSignup = async (e) => {
         e.preventDefault();
         try {
-            console.log("User Registered Successfully");
-            toast.success("User Registered Successfully");
+            const { confirmPassword, password, ...userDataWithoutPasswords } = userData;
+            if (confirmPassword !== password) {
+                toast.error("Password Don't Matched")
+                return;
+            }
+            const { user } = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+            await setDoc(doc(db,"users",user.uid),{
+                ...userDataWithoutPasswords
+            })
+            toast.success("User Registered");
+            setUserData({
+                name: '',
+                email: '',
+                phoneNumber: '',
+                password: '',
+                confirmPassword: '',
+            });
+            navigate('/user_portal')
         } catch (error) {
-            console.log('Error Signing up user : ', error.message);
-            toast.error('Error Signing up user : ', error.message);
+            toast.error(error.message);
         }
     };
+
 
     const routeToLogin = () => {
         navigate('/')
