@@ -24,7 +24,7 @@ const UserLogin = () => {
     return (
         <div className='w-full min-h-screen flex flex-col justify-center items-center bg-[#340068]'>
             <ToastContainer />
-            <div className='w-[90%] relative md:w-[70%] bg-[#FFFFFF] pt-[60px] pb-[60px] rounded-[10px] flex flex-col justify-center items-center gap-5'>
+            <div className='w-[90%] relative md:w-[70%] max-w-[600px] bg-[#FFFFFF] pt-[60px] pb-[60px] rounded-[10px] flex flex-col justify-center items-center gap-5'>
                 <h2 className='text-center font-bold lg:text-[30px] md:text-[25px] text-[20px]'>Admin Login</h2>
                 <form className='w-[90%] md:w-[60%] flex gap-2 flex-col justify-center items-center' onSubmit={handleLogin}>
                     <TextField

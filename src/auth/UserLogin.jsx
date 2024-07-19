@@ -29,7 +29,7 @@ const UserLogin = () => {
     return (
         <div className='w-full min-h-screen flex flex-col justify-center items-center bg-[#340068]'>
             <ToastContainer />
-            <div className='w-[90%] md:w-[70%] bg-[#FFFFFF] pt-[50px] pb-[60px] rounded-[10px] flex flex-col justify-center items-center gap-2'>
+            <div className='w-[90%] md:w-[70%] max-w-[600px] bg-[#FFFFFF] pt-[50px] pb-[60px] rounded-[10px] flex flex-col justify-center items-center gap-2'>
                 <h2 className='text-center font-bold lg:text-[30px] md:text-[25px] text-[20px] mb-4'>Login</h2>
                 <form className='w-[90%] md:w-[60%] flex gap-2 flex-col justify-center items-center' onSubmit={handleLogin}>
                     <TextField
@@ -48,7 +48,6 @@ const UserLogin = () => {
                         type='password'
                         required
                     />
-                    <h3 className='my-1 text-end w-full text-[#2F3061] font-medium cursor-pointer'>Forget Password?</h3>
                     <button
                         type='submit'
                         className='bg-[#340068] hover:bg-white text-white hover:text-[#340068] text-lg font-semibold py-2 px-4 w-[100%] border-2 border-[#340068] rounded shadow'>

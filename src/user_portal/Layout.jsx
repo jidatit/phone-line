@@ -127,7 +127,7 @@ const Layout = () => {
                             </div>
                             <div className="flex flex-cols justify-center items-center gap-0 lg:gap-2">
                                 <Avatar src={UserAvatar} alt="Remy Sharp" />
-                                {displayName && <h1 className="text-base font-semibold pl-4"> Full Name </h1>}
+                                {/* {displayName && <h1 className="text-base font-semibold pl-4"> Full Name </h1>} */}
                                 <Button
                                     id="basic-button"
                                     aria-controls={open ? 'basic-menu' : undefined}
@@ -146,8 +146,7 @@ const Layout = () => {
                                         'aria-labelledby': 'basic-button',
                                     }}
                                 >
-                                    {showNameInMenu && <MenuItem className='gap-2' > <AccountBoxOutlinedIcon /> Full Name </MenuItem>}
-                                    <MenuItem className='gap-2' > <LockResetOutlinedIcon /> Profile </MenuItem>
+                                    {/* {showNameInMenu && <MenuItem className='gap-2' > <AccountBoxOutlinedIcon /> Full Name </MenuItem>} */}
                                     <MenuItem onClick={handleOpenLogout} className='gap-2' > <LogoutOutlinedIcon /> Logout</MenuItem>
                                 </Menu>
                             </div>
