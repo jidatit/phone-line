@@ -99,7 +99,7 @@ const ActivateLine = () => {
 				setDisplayNumbers(true);
 			} else {
 				console.log("Failed to activate SIM");
-				toast.error("Fadiled to activate Sim");
+				toast.error("Failed to activate Sim");
 			}
 		} catch (error) {
 			console.error("Error activating SIM:", error.message);
@@ -127,13 +127,14 @@ const ActivateLine = () => {
 
 			const userData = await fetchUserData();
 			if (userData && userData.domain_user_id) {
-				activateSim(userData.domain_user_id); // Trigger SIM activation after date confirmation
+				activateSim(userData.domain_user_id);
 			} else {
 				console.log("Domain user ID not found");
 				toast.error("Domain user ID not found");
 			}
 		} else {
 			console.log("Please select both start and end dates");
+			toast.error("Please select both start and end dates");
 		}
 	};
 
