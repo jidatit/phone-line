@@ -77,7 +77,7 @@ const Layout = () => {
 	const menuItems = [
 		{ label: "Activate Line", path: "/user_portal" },
 		{ label: "Reports", path: "/user_portal/reports" },
-		{ label: "Billing", path: "/user_portal/billing" },
+		// { label: "Billing", path: "/user_portal/billing" },
 	];
 
 	return currentUser && userType === "user" ? (
@@ -182,7 +182,7 @@ const Layout = () => {
 							</Menu>
 						</div>
 					</div>
-					<div className="w-full py-4 px-4 lg:px-10 bg-[#F9FFFC]">
+					<div className="w-full py-4 px-4 lg:px-10 bg-white">
 						<Outlet />
 					</div>
 				</div>

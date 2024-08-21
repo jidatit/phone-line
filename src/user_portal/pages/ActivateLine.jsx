@@ -36,6 +36,13 @@ const ActivateLine = () => {
 	const userId = currentUser.uid;
 	const [numbers, setNumbers] = useState("");
 
+	const handleReset = ()=>{
+		setSimNumberState(true);
+		setDatePickerState(false);
+		setDisplayNumbers(false);
+		setmsg('');
+	}
+
 	const fetchUserData = async () => {
 		try {
 			const userDocRef = doc(db, "users", userId);
@@ -176,6 +183,7 @@ const ActivateLine = () => {
 			} else {
 				console.log("Failed to activate SIM");
 				toast.error("Failed to activate SIM");
+				setmsg("Failed   to Activate")
 				setLoading(false);
 			}
 		} catch (error) {
@@ -184,7 +192,8 @@ const ActivateLine = () => {
 			setLoading(false);
 		}
 	};
-
+	const [msg, setmsg] = useState();
+	
 	const handleConfirmSimNumber = (e) => {
 		e.preventDefault();
 		if (simNumber !== "") {
@@ -316,6 +325,12 @@ const ActivateLine = () => {
 						</h1>
 					</div>
 				</>
+			)}
+			{msg && (
+				<div className=" w-full text-red-700 text-2xl italic text-center flex gap-3 items-center justify-center">
+					{msg}
+					<button className=" px-3 py-1 text-base text-white bg-red-600 rounded-md" onClick={()=> handleReset()}>Go back</button>
+				</div>
 			)}
 		</div>
 	);

@@ -11,7 +11,7 @@ import { StaticDateTimePicker } from "@mui/x-date-pickers/StaticDateTimePicker";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { InputLabel, TextField } from "@mui/material";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
@@ -254,10 +254,10 @@ const ReportsTable = () => {
 		<>
 			<div className="w-full h-16 flex flex-row justify-between items-center mb-3">
 				<h1 className="text-black text-xl font-bold">All Numbers Made</h1>
-				<button className="flex justify-center items-center gap-2 px-8 py-3 bg-[#340068] text-white rounded-md text-base font-medium">
+				<Link to="/user_portal" className="flex justify-center items-center gap-2 px-8 py-3 bg-[#340068] text-white rounded-md text-base font-medium">
 					Activate a New Number
 					<AddOutlinedIcon />
-				</button>
+				</Link>
 			</div>
 
 			<div className="w-full flex flex-col justify-center items-center">
@@ -272,7 +272,7 @@ const ReportsTable = () => {
 				</div>
 			</div>
 
-			{showOrHideFilters === true ? (
+			{/* {showOrHideFilters === true ? (
 				<>
 					<div className="w-full flex flex-col lg:flex-row justify-evenly items-center px-4 pt-4 gap-2">
 						<LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -321,7 +321,7 @@ const ReportsTable = () => {
 				</>
 			) : (
 				<></>
-			)}
+			)} */}
 
 			<div className="h-full bg-white flex items-center justify-center py-4">
 				<div className="w-full px-2">
@@ -341,9 +341,9 @@ const ReportsTable = () => {
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Status
 									</th>
-									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Extend Date
-									</th>
+									</th> */}
 								</tr>
 							</thead>
 
@@ -427,7 +427,7 @@ const ReportsTable = () => {
 													</div>
 												)}
 											</td>
-											<td
+											{/* <td
 												className={`py-2 px-3 text-base  font-normal ${
 													index == 0
 														? "border-t-2 border-gray-300"
@@ -442,7 +442,7 @@ const ReportsTable = () => {
 												>
 													Extend Expiration Date
 												</button>
-											</td>
+											</td> */}
 										</tr>
 									))}
 							</tbody>
