@@ -13,6 +13,17 @@ import { useAuth } from "../../../AuthContext";
 import { db } from "../../../Firebase";
 import { hash, authAccount, authId, packageId } from "../../../utils/auth";
 
+const Loader = () => {
+	return (
+		<div className="flex justify-center items-center">
+			<div className="flex-col gap-4 w-full flex items-center justify-center">
+				<div className="w-20 h-20 border-4 border-transparent text-blue-400 text-4xl animate-spin flex items-center justify-center border-t-blue-400 rounded-full">
+					<div className="w-16 h-16 border-4 border-transparent text-red-400 text-2xl animate-spin flex items-center justify-center border-t-red-400 rounded-full"></div>
+				</div>
+			</div>
+		</div>
+	);
+};
 const ActivateLine = () => {
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(null);
@@ -21,7 +32,9 @@ const ActivateLine = () => {
 	const [datePickerState, setDatePickerState] = useState(false);
 	const [displayNumbers, setDisplayNumbers] = useState(false);
 	const { currentUser } = useAuth();
+	const [loading, setLoading] = useState(false);
 	const userId = currentUser.uid;
+	const [numbers, setNumbers] = useState("");
 
 	const fetchUserData = async () => {
 		try {
@@ -42,6 +55,7 @@ const ActivateLine = () => {
 
 	const activateSim = async (domainUserId) => {
 		try {
+			setLoading(true);
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 				{
@@ -56,16 +70,8 @@ const ActivateLine = () => {
 						iccid: simNumber,
 						service_id: packageId,
 						dids: [
-							{
-								purchase_type: "new",
-								type: "mobile",
-								country: "IL",
-							},
-							{
-								purchase_type: "new",
-								type: "mobile",
-								country: "US",
-							},
+							{ purchase_type: "new", type: "mobile", country: "IL" },
+							{ purchase_type: "new", type: "mobile", country: "US" },
 						],
 					},
 				},
@@ -76,34 +82,106 @@ const ActivateLine = () => {
 				const msisdn = apiResponse.data.data.msisdn;
 				const endpointId = apiResponse.data.data.endpoint_id;
 
-				// Extract numbers and types from notes
-				const numbers = notes.map((note) => {
+				// Convert dayjs objects to JavaScript Date objects
+				const convertedStartDate = startDate ? startDate.toDate() : null;
+				const convertedEndDate = endDate ? endDate.toDate() : null;
+
+				const newNumbers = notes.map((note) => {
 					const [country, number] = note.split(" הופעל הוא ");
-					const type = country.trim() === "מספר  IL" ? "IL" : "US";
+					const type = country.includes("IL") ? "IL" : "US";
 					return {
 						number: number.trim(),
 						type,
+						endpointId,
+						msisdn,
+						modify: false,
+						startDate: convertedStartDate,
+						endDate: convertedEndDate,
 					};
 				});
+				setNumbers(newNumbers);
+				console.log("new nu", newNumbers);
+				const groupedNumbers = newNumbers.reduce((acc, num) => {
+					if (!acc[num.type]) {
+						acc[num.type] = [];
+					}
+					acc[num.type].push(num);
+					return acc;
+				}, {});
 
-				// Update Firestore with the new data
+				console.log("Grouped Numbers:", groupedNumbers);
+
+				const usNumber = newNumbers.find((num) => num.type === "US");
+				if (usNumber) {
+					const modifyResponse = await axios.post(
+						"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+						{
+							auth: {
+								auth_id: authId,
+								hash: hash,
+								auth: authAccount,
+							},
+							func_name: "modify_caller_ids",
+							data: {
+								domain_user_id: domainUserId,
+								caller_ids_to_update: [
+									{
+										id: -1,
+										owner_id: null,
+										status: "on",
+										cid_name: "1",
+										number: usNumber.number,
+										to_remove: false,
+									},
+								],
+							},
+						},
+					);
+
+					if (modifyResponse.data.status === "OK") {
+						groupedNumbers["US"] = groupedNumbers["US"].map((num) =>
+							num.number === usNumber.number ? { ...num, modify: true } : num,
+						);
+					} else {
+						console.log("Failed to modify caller ID");
+						toast.error("Failed to modify caller ID");
+					}
+				} else {
+					console.log("US number not found in the response");
+					toast.error("US number not found in the response");
+				}
+
+				// Get current data from Firestore
 				const userDocRef = doc(db, "users", userId);
-				await updateDoc(userDocRef, {
-					activationDetails: {
-						numbers: numbers,
-						endpointId: endpointId,
-						msisdn: msisdn,
-					},
-				});
+				const userDoc = await getDoc(userDocRef);
+				let existingData = userDoc.exists()
+					? userDoc.data().activatedNumbers || {}
+					: {};
 
+				// Merge new data with existing data
+				const updatedNumbers = { ...existingData };
+				for (const [type, nums] of Object.entries(groupedNumbers)) {
+					if (!updatedNumbers[type]) {
+						updatedNumbers[type] = [];
+					}
+					updatedNumbers[type] = [...updatedNumbers[type], ...nums];
+				}
+
+				// Update Firestore with the merged data
+				await updateDoc(userDocRef, {
+					activatedNumbers: updatedNumbers,
+				});
+				setLoading(false);
 				setDisplayNumbers(true);
 			} else {
 				console.log("Failed to activate SIM");
-				toast.error("Failed to activate Sim");
+				toast.error("Failed to activate SIM");
+				setLoading(false);
 			}
 		} catch (error) {
 			console.error("Error activating SIM:", error.message);
 			toast.error(error.message);
+			setLoading(false);
 		}
 	};
 
@@ -137,7 +215,10 @@ const ActivateLine = () => {
 			toast.error("Please select both start and end dates");
 		}
 	};
-
+	if(loading)
+	{
+		return <Loader/>
+	}
 	return (
 		<div className="w-full h-auto flex flex-col justify-start items-start gap-4 lg:px-52 px-4">
 			<ToastContainer />
@@ -174,7 +255,6 @@ const ActivateLine = () => {
 					</div>
 				</>
 			)}
-
 			{datePickerState && (
 				<>
 					<h1 className="w-full text-xl font-bold text-center text-black my-3">
@@ -214,7 +294,7 @@ const ActivateLine = () => {
 					</div>
 				</>
 			)}
-
+			
 			{displayNumbers && (
 				<>
 					<h1 className="w-full text-xl font-bold text-center text-black my-3">
@@ -228,10 +308,11 @@ const ActivateLine = () => {
 						{/* Display numbers from state */}
 						{/* Example: */}
 						<h1 className="font-bold text-lg text-[#340068]">
-							LS Number: +1735823586
+							{/* {numbers[0].type}: Number: +{} */}
+							{numbers[0]?.type} : {numbers[0]?.number}
 						</h1>
 						<h1 className="font-bold text-lg text-[#FF6978]">
-							US Number: +1735823586
+							{numbers[1]?.type} : {numbers[1]?.number}
 						</h1>
 					</div>
 				</>

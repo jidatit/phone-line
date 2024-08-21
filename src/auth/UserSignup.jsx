@@ -36,7 +36,7 @@ const UserSignup = () => {
 				return;
 			}
 			console.log("atuh", authId, authAccount, hash);
-			// API request to create a user
+			// API request to create a user returns a domain_user_id
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 				{
@@ -54,11 +54,10 @@ const UserSignup = () => {
 			);
 			console.log("resp", apiResponse);
 
-			// Check API response status
 			if (apiResponse.data.status === "OK") {
 				const domainUserId = apiResponse.data.data.id;
 
-				// Proceed with Firebase registration
+				
 				const { user } = await createUserWithEmailAndPassword(
 					auth,
 					userData.email,
@@ -67,7 +66,8 @@ const UserSignup = () => {
 
 				await setDoc(doc(db, "users", user.uid), {
 					...userDataWithoutPasswords,
-					domain_user_id: domainUserId, // Storing domain_user_id
+					name:name,
+					domain_user_id: domainUserId, 
 					status: "Pending",
 				});
 

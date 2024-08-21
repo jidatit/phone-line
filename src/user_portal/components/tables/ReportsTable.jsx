@@ -12,6 +12,9 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { InputLabel, TextField } from "@mui/material";
 import { Navigate } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../../Firebase";
+import { useAuth } from "../../../../AuthContext";
 
 const style = {
 	position: "absolute",
@@ -33,6 +36,9 @@ const ReportsTable = () => {
 	const [rowPerPage, setRowPerPage] = useState(10);
 	const [rowsToShow, setRowsToShow] = useState([]);
 	const [currentPage, setCurrentPage] = useState(0);
+	const { currentUser } = useAuth();
+	const userId = currentUser?.uid;
+	console.log("user", userId);
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -54,8 +60,8 @@ const ReportsTable = () => {
 	};
 
 	useEffect(() => {
-		getnumbersData();
-	}, []);
+		getNumbersData();
+	}, [userId]);
 
 	useEffect(() => {
 		setRowsToShow(filteredNumbersData.slice(0, rowPerPage));
@@ -103,43 +109,42 @@ const ReportsTable = () => {
 		return paginationLinks;
 	};
 
-	const getnumbersData = async () => {
-		const dummyData = [
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				status: "Activated",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				status: "Pending",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				status: "Pending",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				status: "Activated",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				status: "Pending",
-			},
-		];
+	const getNumbersData = async () => {
 		try {
-			setNumbersData(dummyData);
+			// Fetch user document from Firestore
+			const userDocRef = doc(db, "users", userId);
+			const userDoc = await getDoc(userDocRef);
+
+			if (userDoc.exists()) {
+				// Get the activatedNumbers from the document
+				const activatedNumbers = userDoc.data().activatedNumbers || {};
+
+				// Transform the data to match the structure of numbersData
+				const numbersData = [];
+				for (const [type, numbers] of Object.entries(activatedNumbers)) {
+					numbers.forEach((num) => {
+						numbersData.push({
+							number: num.number,
+							purchaseDate: num.startDate
+								? num.startDate.toDate().toLocaleDateString()
+								: "",
+							expireDate: num.endDate
+								? num.endDate.toDate().toLocaleDateString()
+								: "",
+							status: num.modify ? "Activated" : "Pending", // Assuming 'modify' indicates activation status
+						});
+					});
+				}
+
+				// Set the transformed data to state
+				setNumbersData(numbersData);
+			} else {
+				console.log("No such document!");
+				setNumbersData([]); // Set empty data if no document found
+			}
 		} catch (error) {
-			console.error("Error fetching leads modules : ", error);
+			console.error("Error fetching activated numbers: ", error);
+			setNumbersData([]); // Set empty data in case of error
 		}
 	};
 
