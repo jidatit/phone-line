@@ -8,11 +8,18 @@ import FormControl from "@mui/material/FormControl";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
-import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import {
+	collection,
+	doc,
+	getDocs,
+	getDoc,
+	updateDoc,
+} from "firebase/firestore";
 import { db } from "../../../../Firebase";
 import dayjs from "dayjs"; // Import dayjs or any other date formatting library
 import { toast } from "react-toastify";
-
+import axios from "axios";
+import { hash, authAccount, authId } from "../../../../utils/auth";
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -25,6 +32,14 @@ const style = {
 	overflow: "auto",
 	maxHeight: "100vh",
 };
+const styleLogout = {
+	position: "absolute",
+	top: "50%",
+	left: "50%",
+	transform: "translate(-50%, -50%)",
+	overflow: "auto",
+	maxHeight: "100vh",
+};
 
 const AllUsersTable = () => {
 	const [allUsersData, setAllUsersData] = useState([]);
@@ -33,7 +48,9 @@ const AllUsersTable = () => {
 	const [rowPerPage, setRowPerPage] = useState(10);
 	const [rowsToShow, setRowsToShow] = useState([]);
 	const [currentPage, setCurrentPage] = useState(0);
-
+	const [openMobile, setOpenMobile] = useState(false);
+	const handleOpenMobile = () => setOpenMobile(true);
+	const handleCloseMobile = () => setOpenMobile(false);
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
 	const handleOpenExtendExpirationDate = () =>
@@ -52,7 +69,6 @@ const AllUsersTable = () => {
 	const handleRowPerPageChange = (event) => {
 		setRowPerPage(event.target.value);
 	};
-
 
 	useEffect(() => {
 		getallUsersData();
@@ -115,6 +131,9 @@ const AllUsersTable = () => {
 				.map((doc) => {
 					const data = doc.data();
 					const userData = data.activatedNumbers || {}; // Assuming activatedNumbers is the key storing the numbers
+					const uid = doc.id; // Use the document ID as the user ID
+
+					console.log("data", data);
 
 					return Object.keys(userData).flatMap((type) =>
 						userData[type].map((numberInfo) => {
@@ -132,16 +151,21 @@ const AllUsersTable = () => {
 								expireDate,
 								currentBalance: data.currentBalance || 0, // Replace with actual balance field if exists
 								status: numberInfo.modify ? "Activated" : "Pending",
+								endpointId: numberInfo?.endpointId || 0,
+								userId: uid, // Use the document ID as the user ID
+								simNumber: numberInfo?.simNumber,
+								activated: numberInfo?.Activated,
 							};
 						}),
 					);
 				})
-				.flat(); 
+				.flat();
 
 			setAllUsersData(usersData);
+			console.log("all user", usersData); // Ensure to log the updated `usersData`
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
-            toast.error("Error fetching users data");
+			toast.error("Error fetching users data");
 		}
 	};
 
@@ -242,6 +266,110 @@ const AllUsersTable = () => {
 			sortOrder: event.target.value,
 		}));
 	};
+	const handleDeactivateNumber = async (number, uid) => {
+		console.log("number", number);
+		console.log("uid", uid);
+		try {
+			// Make the API request to deactivate the number
+			const apiResponse = await axios.post(
+				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+				{
+					auth: {
+						auth_id: authId,
+						hash: hash,
+						auth: authAccount,
+					},
+					func_name: "prov_terminate_did",
+					data: {
+						number,
+					},
+				},
+			);
+
+			// Check if the deactivation was successful
+			if (apiResponse.data.status === "OK") {
+				// Get the current data from Firestore
+				const userDocRef = doc(db, "users", uid);
+				const userDoc = await getDoc(userDocRef);
+				if (userDoc.exists()) {
+					const data = userDoc.data();
+					const activatedNumbers = data.activatedNumbers || {};
+
+					// Remove the deactivated number from the user's data
+					for (const type in activatedNumbers) {
+						activatedNumbers[type] = activatedNumbers[type].filter(
+							(num) => num.number !== number,
+						);
+					}
+
+					// Update Firestore with the modified data
+					await updateDoc(userDocRef, {
+						activatedNumbers,
+					});
+					getallUsersData();
+
+					console.log(
+						"Number deactivated and removed from Firestore successfully",
+					);
+				} else {
+					console.error("User document not found");
+				}
+			} else {
+				console.error("Failed to deactivate the number");
+				toast.error("Failed to deactivate the number");
+			}
+		} catch (error) {
+			console.error("Error handling number deactivation:", error.message);
+			toast.error(error.message);
+		}
+	};
+	const deactivateByICCID = async (iccid, endpointId, userId) => {
+		try {
+			// Make the API request to deactivate the mobile number using the endpoint ID
+			const apiResponse = await axios.post(
+				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+				{
+					auth: {
+						auth_id: authId,
+						hash: hash,
+						auth: authAccount,
+					},
+					func_name: "prov_terminate_mobile",
+					data: { endpoint_id: endpointId },
+				},
+			);
+
+			// If the API response indicates success
+			if (apiResponse.data.status === "OK") {
+				const userDocRef = doc(db, "users", userId);
+				const userDoc = await getDoc(userDocRef);
+
+				if (userDoc.exists()) {
+					const activatedNumbers = userDoc.data().activatedNumbers;
+
+					// Update the status of the numbers associated with the ICCID to "Pending"
+					const updatedNumbers = {};
+					for (let type in activatedNumbers) {
+						updatedNumbers[type] = activatedNumbers[type].map((num) => {
+							if (num.simNumber === iccid) {
+								return { ...num, Activated: "Deactivated" };
+							}
+							return num;
+						});
+					}
+
+					// Update the Firestore document with the new status
+					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
+
+					// Optionally, refresh the UI or data
+					getallUsersData();
+				}
+			}
+		} catch (error) {
+			console.error("Error deactivating ICCID:", error.message);
+			toast.error(error.message);
+		}
+	};
 
 	useEffect(() => {
 		applyFilters();
@@ -250,7 +378,7 @@ const AllUsersTable = () => {
 	return (
 		<>
 			<div className="w-full flex flex-row justify-between items-center mb-8">
-				<h1 className="text-black text-xl font-bold">All Users</h1>
+				<h1 className="text-black text-xl font-bold">All Numbers</h1>
 			</div>
 
 			<div className="w-full flex flex-col justify-center items-center">
@@ -338,81 +466,88 @@ const AllUsersTable = () => {
 										Status
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Mobile Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Add Funds
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Remove Funds
 									</th>
+									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Deactivate Number
+									</th> */}
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Deactivate Mobile
+									</th>
 								</tr>
 							</thead>
 
 							<tbody>
-								{rowsToShow &&
-									rowsToShow?.map((data, index) => (
-										<tr
-											className={`${
-												index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
-											}`}
-											key={index}
+								{rowsToShow?.map((data, index) => (
+									<tr
+										className={`${
+											index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
+										}`}
+										key={index}
+									>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
 										>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.name ? <div> - </div> : <div>{data.name}</div>}
-                                                {console.log("data",data)}
-											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.number ? (
-													<div> - </div>
-												) : (
-													<div>{data.number}</div>
-												)}
-											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.purchaseDate ? (
-													<div> - </div>
-												) : (
-													<div>{data.purchaseDate}</div>
-												)}
-											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.expireDate ? (
-													<div> - </div>
-												) : (
-													<div>{data.expireDate}</div>
-												)}
-											</td>
-											{/* <td
+											{!data?.name ? <div> - </div> : <div>{data.name}</div>}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.number ? (
+												<div> - </div>
+											) : (
+												<div>{data.number}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.purchaseDate ? (
+												<div> - </div>
+											) : (
+												<div>{data.purchaseDate}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.expireDate ? (
+												<div> - </div>
+											) : (
+												<div>{data.expireDate}</div>
+											)}
+										</td>
+										{/* <td
 												className={`py-2 px-3 font-normal text-base ${
 													index == 0
 														? "border-t-2 border-gray-300"
@@ -427,86 +562,142 @@ const AllUsersTable = () => {
 													<div> ${data.currentBalance}</div>
 												)}
 											</td> */}
-											<td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{data?.status && data?.status === "Activated" && (
-													<div className="w-full flex flex-row justify-start items-center gap-2">
-														<FiberManualRecordIcon
-															sx={{ color: "#4CE13F", fontSize: 16 }}
-														/>
-														<h1> {data.status} </h1>
+										<td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{data?.activated && data?.activated === "Activated" && (
+												<div className="w-full flex flex-row justify-start items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#4CE13F", fontSize: 16 }}
+													/>
+													<h1> {data.activated} </h1>
+												</div>
+											)}
+											{data?.activated && data?.activated === "Deactivated" && (
+												<div className="w-full flex flex-row justify-start items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#C70000", fontSize: 16 }}
+													/>
+													<h1 className="pr-4"> {data.activated} </h1>
+													<DoneIcon
+														sx={{
+															color: "#4CE13F",
+															fontSize: 28,
+															fontWeight: "bold",
+															cursor: "pointer",
+														}}
+													/>
+													<div className="font-medium text-lg text-gray-800">
+														{" "}
+														|{" "}
 													</div>
-												)}
-												{data?.status && data?.status === "Pending" && (
-													<div className="w-full flex flex-row justify-start items-center gap-2">
-														<FiberManualRecordIcon
-															sx={{ color: "#C70000", fontSize: 16 }}
-														/>
-														<h1 className="pr-4"> {data.status} </h1>
-														<DoneIcon
-															sx={{
-																color: "#4CE13F",
-																fontSize: 28,
-																fontWeight: "bold",
-																cursor: "pointer",
-															}}
-														/>
-														<div className="font-medium text-lg text-gray-800">
-															{" "}
-															|{" "}
-														</div>
-														<CloseIcon
-															sx={{
-																color: "#C70000",
-																fontSize: 28,
-																fontWeight: "bold",
-																cursor: "pointer",
-															}}
-														/>
-													</div>
-												)}
-											</td>
-											<td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
+													<CloseIcon
+														sx={{
+															color: "#C70000",
+															fontSize: 28,
+															fontWeight: "bold",
+															cursor: "pointer",
+														}}
+													/>
+												</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.simNumber ? (
+												<div> - </div>
+											) : (
+												<div>{data.simNumber}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											<button
+												onClick={handleOpenExtendExpirationDate}
+												className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
 											>
-												<button
-													onClick={handleOpenExtendExpirationDate}
-													className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
-												>
-													Add Funds
-												</button>
-											</td>
-											<td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
+												Add Funds
+											</button>
+										</td>
+										<td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											<button
+												onClick={handleOpenExtendExpirationDate}
+												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
 											>
-												<button
-													onClick={handleOpenExtendExpirationDate}
-													className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
-												>
-													Remove Funds
-												</button>
-											</td>
-										</tr>
-									))}
+												Remove Funds
+											</button>
+										</td>
+
+										{/* <td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											<button
+												onClick={() => {
+													handleDeactivateNumber(data?.number, data?.userId);
+												}}
+												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
+											>
+												Deactivate Line
+											</button>
+										</td> */}
+										<td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											<button
+												onClick={() => {
+													deactivateByICCID(
+														data?.simNumber,
+														data?.endpointId,
+														data?.userId,
+													);
+												}}
+												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
+											>
+												Deactivate Mobile
+											</button>
+										</td>
+									</tr>
+								))}
 							</tbody>
 						</table>
 					</div>
@@ -640,6 +831,40 @@ const AllUsersTable = () => {
 
 								<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5">
 									<div className="flex flex-col justify-start items-start gap-2"></div>
+								</div>
+							</div>
+						</Box>
+					</Modal>
+					<Modal
+						open={openMobile}
+						onClose={handleCloseMobile}
+						aria-describedby="modal-data"
+					>
+						<Box sx={styleLogout}>
+							<div
+								id="modal-data"
+								className="w-full h-full flex flex-col justify-start items-center gap-3 px-16 py-16 text-white bg-[#340068]"
+							>
+								<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5">
+									<h2 className="text-2xl font-bold">
+										{" "}
+										Are you sure you want to delete Mobile Number?{" "}
+									</h2>
+								</div>
+								<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center mt-4 gap-5">
+									<div className="flex flex-row justify-center items-start gap-4">
+										<button
+											onClick={handleCloseMobile}
+											className="px-12 py-3 bg-[#B40000] font-semibold rounded-md"
+										>
+											{" "}
+											Cancel{" "}
+										</button>
+										<button className="px-12 py-3 bg-[#0EB400] font-semibold rounded-md">
+											{" "}
+											Confirm{" "}
+										</button>
+									</div>
 								</div>
 							</div>
 						</Box>

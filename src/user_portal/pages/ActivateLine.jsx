@@ -12,18 +12,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../../../AuthContext";
 import { db } from "../../../Firebase";
 import { hash, authAccount, authId, packageId } from "../../../utils/auth";
-
-const Loader = () => {
-	return (
-		<div className="flex justify-center items-center">
-			<div className="flex-col gap-4 w-full flex items-center justify-center">
-				<div className="w-20 h-20 border-4 border-transparent text-blue-400 text-4xl animate-spin flex items-center justify-center border-t-blue-400 rounded-full">
-					<div className="w-16 h-16 border-4 border-transparent text-red-400 text-2xl animate-spin flex items-center justify-center border-t-red-400 rounded-full"></div>
-				</div>
-			</div>
-		</div>
-	);
-};
+import Loader from "../../../utils/Loader";
 const ActivateLine = () => {
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(null);
@@ -36,12 +25,12 @@ const ActivateLine = () => {
 	const userId = currentUser.uid;
 	const [numbers, setNumbers] = useState("");
 
-	const handleReset = ()=>{
+	const handleReset = () => {
 		setSimNumberState(true);
 		setDatePickerState(false);
 		setDisplayNumbers(false);
-		setmsg('');
-	}
+		setmsg("");
+	};
 
 	const fetchUserData = async () => {
 		try {
@@ -58,11 +47,11 @@ const ActivateLine = () => {
 			return null;
 		}
 	};
-	fetchUserData();
 
 	const activateSim = async (domainUserId) => {
 		try {
 			setLoading(true);
+
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 				{
@@ -74,7 +63,7 @@ const ActivateLine = () => {
 					func_name: "prov_create_mobile",
 					data: {
 						domain_user_id: domainUserId,
-						iccid: simNumber,
+						iccid: simNumber, // Include the SIM number in the API request
 						service_id: packageId,
 						dids: [
 							{ purchase_type: "new", type: "mobile", country: "IL" },
@@ -104,10 +93,13 @@ const ActivateLine = () => {
 						modify: false,
 						startDate: convertedStartDate,
 						endDate: convertedEndDate,
+						simNumber, // Store the entered SIM number with each number entry
+						Activated: "Activated",
 					};
 				});
+
 				setNumbers(newNumbers);
-				console.log("new nu", newNumbers);
+
 				const groupedNumbers = newNumbers.reduce((acc, num) => {
 					if (!acc[num.type]) {
 						acc[num.type] = [];
@@ -115,8 +107,6 @@ const ActivateLine = () => {
 					acc[num.type].push(num);
 					return acc;
 				}, {});
-
-				console.log("Grouped Numbers:", groupedNumbers);
 
 				const usNumber = newNumbers.find((num) => num.type === "US");
 				if (usNumber) {
@@ -178,12 +168,13 @@ const ActivateLine = () => {
 				await updateDoc(userDocRef, {
 					activatedNumbers: updatedNumbers,
 				});
+
 				setLoading(false);
 				setDisplayNumbers(true);
 			} else {
 				console.log("Failed to activate SIM");
 				toast.error("Failed to activate SIM");
-				setmsg("Failed   to Activate")
+				setmsg("Failed to Activate");
 				setLoading(false);
 			}
 		} catch (error) {
@@ -192,8 +183,9 @@ const ActivateLine = () => {
 			setLoading(false);
 		}
 	};
+
 	const [msg, setmsg] = useState();
-	
+
 	const handleConfirmSimNumber = (e) => {
 		e.preventDefault();
 		if (simNumber !== "") {
@@ -224,9 +216,8 @@ const ActivateLine = () => {
 			toast.error("Please select both start and end dates");
 		}
 	};
-	if(loading)
-	{
-		return <Loader/>
+	if (loading) {
+		return <Loader />;
 	}
 	return (
 		<div className="w-full h-auto flex flex-col justify-start items-start gap-4 lg:px-52 px-4">
@@ -303,7 +294,7 @@ const ActivateLine = () => {
 					</div>
 				</>
 			)}
-			
+
 			{displayNumbers && (
 				<>
 					<h1 className="w-full text-xl font-bold text-center text-black my-3">
@@ -329,7 +320,12 @@ const ActivateLine = () => {
 			{msg && (
 				<div className=" w-full text-red-700 text-2xl italic text-center flex gap-3 items-center justify-center">
 					{msg}
-					<button className=" px-3 py-1 text-base text-white bg-red-600 rounded-md" onClick={()=> handleReset()}>Go back</button>
+					<button
+						className=" px-3 py-1 text-base text-white bg-red-600 rounded-md"
+						onClick={() => handleReset()}
+					>
+						Go back
+					</button>
 				</div>
 			)}
 		</div>

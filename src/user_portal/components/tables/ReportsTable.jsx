@@ -131,7 +131,7 @@ const ReportsTable = () => {
 							expireDate: num.endDate
 								? num.endDate.toDate().toLocaleDateString()
 								: "",
-							status: num.modify ? "Activated" : "Pending", // Assuming 'modify' indicates activation status
+							status: num.Activated,
 						});
 					});
 				}
@@ -254,7 +254,10 @@ const ReportsTable = () => {
 		<>
 			<div className="w-full h-16 flex flex-row justify-between items-center mb-3">
 				<h1 className="text-black text-xl font-bold">All Numbers Made</h1>
-				<Link to="/user_portal" className="flex justify-center items-center gap-2 px-8 py-3 bg-[#340068] text-white rounded-md text-base font-medium">
+				<Link
+					to="/user_portal"
+					className="flex justify-center items-center gap-2 px-8 py-3 bg-[#340068] text-white rounded-md text-base font-medium"
+				>
 					Activate a New Number
 					<AddOutlinedIcon />
 				</Link>
@@ -418,7 +421,7 @@ const ReportsTable = () => {
 														<h1> {data.status} </h1>
 													</div>
 												)}
-												{data?.status && data?.status === "Pending" && (
+												{data?.status && data?.status === "Deactivated" && (
 													<div className="w-full flex flex-row justify-start items-center gap-2">
 														<FiberManualRecordIcon
 															sx={{ color: "#C70000", fontSize: 16 }}
