@@ -127,42 +127,55 @@ const AllUsersTable = () => {
 			const querySnapshot = await getDocs(usersCollectionRef);
 
 			// Mapping Firestore data to match data structure
-			const usersData = querySnapshot.docs
-				.map((doc) => {
-					const data = doc.data();
-					const userData = data.activatedNumbers || {}; // Assuming activatedNumbers is the key storing the numbers
-					const uid = doc.id; // Use the document ID as the user ID
+			const usersData = querySnapshot.docs.flatMap((doc) => {
+				const data = doc.data();
+				const activatedNumbers = data.activatedNumbers || {}; // Accessing activatedNumbers
+				const uid = doc.id; // Use the document ID as the user ID
 
-					console.log("data", data);
+				console.log("data", data);
 
-					return Object.keys(userData).flatMap((type) =>
-						userData[type].map((numberInfo) => {
-							const purchaseDate = numberInfo.startDate
-								? dayjs(numberInfo.startDate.toDate()).format("DD/MM/YYYY")
-								: "N/A";
-							const expireDate = numberInfo.endDate
-								? dayjs(numberInfo.endDate.toDate()).format("DD/MM/YYYY")
-								: "N/A";
+				// Iterate over each simNumber in activatedNumbers
+				return Object.entries(activatedNumbers).flatMap(
+					([simNumber, numbersByType]) =>
+						// Iterate over each country (IL, US) and its numbers
+						Object.entries(numbersByType).flatMap(([country, numbers]) => {
+							// Ensure `numbers` is an array before mapping
+							if (Array.isArray(numbers)) {
+								return numbers.map((numberInfo) => {
+									const purchaseDate = numberInfo.startDate
+										? dayjs(numberInfo.startDate.toDate()).format("DD/MM/YYYY")
+										: "N/A";
+									const expireDate = numberInfo.endDate
+										? dayjs(numberInfo.endDate.toDate()).format("DD/MM/YYYY")
+										: "N/A";
 
-							return {
-								name: data.name || "Unknown Name", // Replace with actual name field if exists
-								number: numberInfo.number,
-								purchaseDate,
-								expireDate,
-								currentBalance: data.currentBalance || 0, // Replace with actual balance field if exists
-								status: numberInfo.modify ? "Activated" : "Pending",
-								endpointId: numberInfo?.endpointId || 0,
-								userId: uid, // Use the document ID as the user ID
-								simNumber: numberInfo?.simNumber,
-								activated: numberInfo?.Activated,
-							};
+									return {
+										name: data.name || "Unknown Name", // Replace with actual name field if it exists
+										number: numberInfo.number,
+										simNumber: simNumber, // Include the simNumber
+										country: country, // Include the country (IL or US)
+										purchaseDate,
+										expireDate,
+										currentBalance: data.currentBalance || 0, // Replace with actual balance field if it exists
+										status: numberInfo.modify ? "Activated" : "Pending",
+										endpointId: numberInfo.endpointId || 0,
+										userId: uid, // Use the document ID as the user ID
+										activated: numberInfo.Activated,
+										domainUserId: numberInfo.domainUserId,
+									};
+								});
+							} else {
+								console.warn(
+									`Expected an array for numbers, but got ${typeof numbers}`,
+								);
+								return []; // Return an empty array if `numbers` is not an array
+							}
 						}),
-					);
-				})
-				.flat();
+				);
+			});
 
 			setAllUsersData(usersData);
-			console.log("all user", usersData); // Ensure to log the updated `usersData`
+			console.log("all user", usersData); // Log the updated `usersData`
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
 			toast.error("Error fetching users data");
@@ -367,6 +380,61 @@ const AllUsersTable = () => {
 			}
 		} catch (error) {
 			console.error("Error deactivating ICCID:", error.message);
+			toast.error(error.message);
+		}
+	};
+	const terminateUser = async (domainUserId, userId) => {
+		console.log("domai", domainUserId);
+		console.log("user", userId);
+		try {
+			// Make the API request to terminate the user using their domain user ID
+			const apiResponse = await axios.post(
+				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+				{
+					auth: {
+						auth_id: authId,
+						hash: hash,
+						auth: authAccount,
+					},
+					func_name: "prov_terminate_user",
+					data: { domain_user_id: domainUserId },
+				},
+			);
+
+			// If the API response indicates success
+			if (apiResponse.data.status === "OK") {
+				const userDocRef = doc(db, "users", userId);
+				const userDoc = await getDoc(userDocRef);
+
+				if (userDoc.exists()) {
+					const activatedNumbers = userDoc.data().activatedNumbers || {};
+
+					// Mark all numbers associated with the user as "Deactivated"
+					const updatedNumbers = {};
+					for (let simNumber in activatedNumbers) {
+						updatedNumbers[simNumber] = {};
+						for (let type in activatedNumbers[simNumber]) {
+							updatedNumbers[simNumber][type] = activatedNumbers[simNumber][
+								type
+							].map((num) => ({
+								...num,
+								Activated: "Deactivated",
+							}));
+						}
+					}
+
+					// Update the Firestore document with the new status
+					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
+
+					// Optionally, refresh the UI or data
+					getallUsersData();
+				}
+			} else {
+				console.error("API response error:", apiResponse.data);
+				toast.error("Failed to terminate the user.");
+			}
+		} catch (error) {
+			console.error("Error terminating user:", error.message);
 			toast.error(error.message);
 		}
 	};
@@ -684,16 +752,13 @@ const AllUsersTable = () => {
 											} whitespace-nowrap`}
 										>
 											<button
+												type="button"
 												onClick={() => {
-													deactivateByICCID(
-														data?.simNumber,
-														data?.endpointId,
-														data?.userId,
-													);
+													terminateUser(data?.domainUserId, data?.userId);
 												}}
 												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
 											>
-												Deactivate Mobile
+												Terminate User
 											</button>
 										</td>
 									</tr>

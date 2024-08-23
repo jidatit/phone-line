@@ -121,19 +121,28 @@ const ReportsTable = () => {
 
 				// Transform the data to match the structure of numbersData
 				const numbersData = [];
-				for (const [type, numbers] of Object.entries(activatedNumbers)) {
-					numbers.forEach((num) => {
-						numbersData.push({
-							number: num.number,
-							purchaseDate: num.startDate
-								? num.startDate.toDate().toLocaleDateString()
-								: "",
-							expireDate: num.endDate
-								? num.endDate.toDate().toLocaleDateString()
-								: "",
-							status: num.Activated,
+
+				// Iterate over each simNumber key in activatedNumbers
+				for (const [simNumber, numbersByType] of Object.entries(
+					activatedNumbers,
+				)) {
+					// Iterate over each country (IL, US) and its numbers
+					for (const [country, numbers] of Object.entries(numbersByType)) {
+						numbers.forEach((num) => {
+							numbersData.push({
+								number: num.number,
+								simNumber: simNumber, // Include the simNumber in the output
+								country: country, // Include the country (IL or US) in the output
+								purchaseDate: num.startDate
+									? num.startDate.toDate().toLocaleDateString()
+									: "",
+								expireDate: num.endDate
+									? num.endDate.toDate().toLocaleDateString()
+									: "",
+								status: num.Activated,
+							});
 						});
-					});
+					}
 				}
 
 				// Set the transformed data to state

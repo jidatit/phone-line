@@ -11,7 +11,13 @@ import "react-toastify/dist/ReactToastify.css";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../../../AuthContext";
 import { db } from "../../../Firebase";
-import { hash, authAccount, authId, packageId } from "../../../utils/auth";
+import {
+	hash,
+	authAccount,
+	authId,
+	packageId,
+	accountId,
+} from "../../../utils/auth";
 import Loader from "../../../utils/Loader";
 const ActivateLine = () => {
 	const [simNumber, setSimNumber] = useState("");
@@ -48,10 +54,35 @@ const ActivateLine = () => {
 		}
 	};
 
-	const activateSim = async (domainUserId) => {
+	const activateSim = async () => {
 		try {
 			setLoading(true);
 
+			// Step 1: Create a user via the API before activating the SIM
+			const userCreationResponse = await axios.post(
+				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+				{
+					auth: {
+						auth_id: authId,
+						hash: hash,
+						auth: authAccount,
+					},
+					func_name: "prov_create_user",
+					data: {
+						account_id: accountId,
+						name: simNumber, // Use simNumber as the name for the API request
+					},
+				},
+			);
+
+			if (userCreationResponse.data.status !== "OK") {
+				toast.error("Failed to create user via API");
+				setLoading(false);
+				return;
+			}
+			const domainUserId = userCreationResponse.data.data.id;
+
+			// Step 2: Proceed to activate the SIM
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 				{
@@ -95,19 +126,11 @@ const ActivateLine = () => {
 						endDate: convertedEndDate,
 						simNumber, // Store the entered SIM number with each number entry
 						Activated: "Activated",
+						domainUserId: domainUserId,
 					};
 				});
-
 				setNumbers(newNumbers);
-
-				const groupedNumbers = newNumbers.reduce((acc, num) => {
-					if (!acc[num.type]) {
-						acc[num.type] = [];
-					}
-					acc[num.type].push(num);
-					return acc;
-				}, {});
-
+				// Step 3: Modify caller ID for US numbers
 				const usNumber = newNumbers.find((num) => num.type === "US");
 				if (usNumber) {
 					const modifyResponse = await axios.post(
@@ -136,9 +159,11 @@ const ActivateLine = () => {
 					);
 
 					if (modifyResponse.data.status === "OK") {
-						groupedNumbers["US"] = groupedNumbers["US"].map((num) =>
-							num.number === usNumber.number ? { ...num, modify: true } : num,
-						);
+						newNumbers.forEach((num) => {
+							if (num.type === "US" && num.number === usNumber.number) {
+								num.modify = true;
+							}
+						});
 					} else {
 						console.log("Failed to modify caller ID");
 						toast.error("Failed to modify caller ID");
@@ -148,21 +173,30 @@ const ActivateLine = () => {
 					toast.error("US number not found in the response");
 				}
 
-				// Get current data from Firestore
+				// Step 4: Store the activated numbers in Firestore, organized by simNumber
 				const userDocRef = doc(db, "users", userId);
 				const userDoc = await getDoc(userDocRef);
 				let existingData = userDoc.exists()
 					? userDoc.data().activatedNumbers || {}
 					: {};
 
-				// Merge new data with existing data
-				const updatedNumbers = { ...existingData };
-				for (const [type, nums] of Object.entries(groupedNumbers)) {
-					if (!updatedNumbers[type]) {
-						updatedNumbers[type] = [];
+				// Group numbers by IL and US
+				const groupedNumbers = newNumbers.reduce((acc, num) => {
+					if (!acc[num.type]) {
+						acc[num.type] = [];
 					}
-					updatedNumbers[type] = [...updatedNumbers[type], ...nums];
-				}
+					acc[num.type].push(num);
+					return acc;
+				}, {});
+
+				// Merge new data with existing data, keyed by simNumber
+				const updatedNumbers = {
+					...existingData,
+					[simNumber]: {
+						IL: groupedNumbers.IL || [],
+						US: groupedNumbers.US || [],
+					},
+				};
 
 				// Update Firestore with the merged data
 				await updateDoc(userDocRef, {
@@ -205,8 +239,8 @@ const ActivateLine = () => {
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
-			if (userData && userData.domain_user_id) {
-				activateSim(userData.domain_user_id);
+			if (userData) {
+				activateSim();
 			} else {
 				console.log("Domain user ID not found");
 				toast.error("Domain user ID not found");

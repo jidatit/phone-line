@@ -28,63 +28,43 @@ const UserSignup = () => {
 	const handleSignup = async (e) => {
 		e.preventDefault();
 		try {
-			const { confirmPassword, password, name, ...userDataWithoutPasswords } =
+			const { confirmPassword, password, ...userDataWithoutPasswords } =
 				userData;
 
+			// Check if passwords match
 			if (confirmPassword !== password) {
 				toast.error("Passwords don't match");
 				return;
 			}
-			console.log("atuh", authId, authAccount, hash);
-			// API request to create a user returns a domain_user_id
-			const apiResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
-					},
-					func_name: "prov_create_user",
-					data: {
-						account_id: accountId,
-						name: name,
-					},
-				},
+
+			// Firebase signup using email and password
+			const { user } = await createUserWithEmailAndPassword(
+				auth,
+				userData.email,
+				password,
 			);
-			console.log("resp", apiResponse);
 
-			if (apiResponse.data.status === "OK") {
-				const domainUserId = apiResponse.data.data.id;
+			// Store user data in Firestore
+			await setDoc(doc(db, "users", user.uid), {
+				...userDataWithoutPasswords,
 
-				
-				const { user } = await createUserWithEmailAndPassword(
-					auth,
-					userData.email,
-					password,
-				);
+				status: "Pending", // Initial status as Pending
+			});
 
-				await setDoc(doc(db, "users", user.uid), {
-					...userDataWithoutPasswords,
-					name:name,
-					domain_user_id: domainUserId, 
-					status: "Pending",
-				});
+			// Show success message and reset form
+			toast.success("User Registered");
+			setUserData({
+				name: "",
+				email: "",
+				phoneNumber: "",
+				password: "",
+				confirmPassword: "",
+			});
 
-				toast.success("User Registered");
-				setUserData({
-					name: "",
-					email: "",
-					phoneNumber: "",
-					password: "",
-					confirmPassword: "",
-				});
-
-				navigate("/user_portal");
-			} else {
-				toast.error("Failed to create user via API");
-			}
+			// Navigate to user portal
+			navigate("/user_portal");
 		} catch (error) {
+			// Handle any errors during the signup process
 			toast.error(error.message);
 		}
 	};
