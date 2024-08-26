@@ -42,7 +42,7 @@ const Layout = () => {
 		const isDesktop = window.innerWidth > 768;
 		console.log("desk", isDesktop);
 		setDisplayName(isDesktop);
-		setShowNameInMenu(isDesktop);
+		setShowNameInMenu(!isDesktop);
 		setName(currentUser?.data?.name);
 	}, []);
 
@@ -77,7 +77,7 @@ const Layout = () => {
 	const menuItems = [
 		{ label: "Activate Line", path: "/user_portal" },
 		{ label: "Reports", path: "/user_portal/reports" },
-		// { label: "Billing", path: "/user_portal/billing" },
+		{ label: "Billing", path: "/user_portal/billing" },
 	];
 
 	return currentUser && userType === "user" ? (
@@ -148,9 +148,9 @@ const Layout = () => {
 						</div>
 						<div className="flex flex-cols justify-center items-center gap-0 lg:gap-2">
 							<Avatar src={UserAvatar} alt="Remy Sharp" />
-							{/* {displayName && (
-								<h1 className="text-base font-semibold pl-4"> Full Name </h1>
-							)} */}
+							{displayName && (
+								<h1 className="text-base font-semibold pl-4"> {name}</h1>
+							)}
 							<Button
 								id="basic-button"
 								aria-controls={open ? "basic-menu" : undefined}

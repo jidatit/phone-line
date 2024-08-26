@@ -384,8 +384,9 @@ const AllUsersTable = () => {
 		}
 	};
 	const terminateUser = async (domainUserId, userId) => {
-		console.log("domai", domainUserId);
-		console.log("user", userId);
+		console.log("domainUserId:", domainUserId);
+		console.log("userId:", userId);
+
 		try {
 			// Make the API request to terminate the user using their domain user ID
 			const apiResponse = await axios.post(
@@ -409,17 +410,21 @@ const AllUsersTable = () => {
 				if (userDoc.exists()) {
 					const activatedNumbers = userDoc.data().activatedNumbers || {};
 
-					// Mark all numbers associated with the user as "Deactivated"
+					// Update only the numbers associated with the specific domainUserId
 					const updatedNumbers = {};
+
 					for (let simNumber in activatedNumbers) {
 						updatedNumbers[simNumber] = {};
 						for (let type in activatedNumbers[simNumber]) {
 							updatedNumbers[simNumber][type] = activatedNumbers[simNumber][
 								type
-							].map((num) => ({
-								...num,
-								Activated: "Deactivated",
-							}));
+							].map((num) => {
+								// Only deactivate numbers with the matching domainUserId
+								if (num.domainUserId === domainUserId) {
+									return { ...num, Activated: "Deactivated" };
+								}
+								return num;
+							});
 						}
 					}
 
