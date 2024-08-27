@@ -73,6 +73,10 @@ const Layout = () => {
 	const handleClose = () => {
 		setAnchorEl(null);
 	};
+	const NavToChangePass = () => {
+		navigate("/user_portal/changePassword");
+		handleClose();
+	};
 
 	const menuItems = [
 		{ label: "Activate Line", path: "/user_portal" },
@@ -86,7 +90,9 @@ const Layout = () => {
 				{/* Right Navbar */}
 				<div
 					id="logo-sidebar"
-					className={`w-64 min-h-screen absolute flex flex-col left-0 top-0 bg-[#340068] transition-transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 z-50`}
+					className={`w-64 min-h-screen absolute flex flex-col left-0 top-0 bg-[#340068] transition-transform ${
+						isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+					} sm:translate-x-0 z-50`}
 					aria-label="Sidebar"
 				>
 					<div
@@ -175,6 +181,10 @@ const Layout = () => {
 										<AccountBoxOutlinedIcon /> {name}{" "}
 									</MenuItem>
 								)}
+								<MenuItem onClick={NavToChangePass} className="gap-2">
+									{" "}
+									<LockResetOutlinedIcon /> Change Password
+								</MenuItem>
 								<MenuItem onClick={handleOpenLogout} className="gap-2">
 									{" "}
 									<LogoutOutlinedIcon /> Logout
@@ -195,7 +205,7 @@ const Layout = () => {
 					<Box sx={styleLogout}>
 						<div
 							id="modal-data"
-							className="w-full h-full flex flex-col justify-start items-center gap-3 px-16 py-16 text-white bg-[#340068]"
+							className="w-full rounded-lg h-full flex flex-col justify-start items-center gap-3 px-16 py-16 text-white bg-[#340068]"
 						>
 							<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5">
 								<h2 className="text-2xl font-bold">
@@ -207,14 +217,14 @@ const Layout = () => {
 								<div className="flex flex-row justify-center items-start gap-4">
 									<button
 										onClick={handleCloseLogout}
-										className="px-12 py-3 bg-[#B40000] font-semibold rounded-md"
+										className="px-12 py-3 hover:bg-[#470707] bg-[#B40000] font-semibold rounded-md"
 									>
 										{" "}
 										Cancel{" "}
 									</button>
 									<button
 										onClick={logout}
-										className="px-12 py-3 bg-[#0EB400] font-semibold rounded-md"
+										className="px-12 py-3 hover:bg-[#0a4105]  bg-[#0EB400] font-semibold rounded-md"
 									>
 										{" "}
 										Confirm{" "}
