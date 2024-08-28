@@ -322,8 +322,8 @@ const AllUsersTable = () => {
 					getallUsersData();
 
 					//console.log(
-						"Number deactivated and removed from Firestore successfully",
-					);
+						// "Number deactivated and removed from Firestore successfully",
+					// );
 				} else {
 					console.error("User document not found");
 				}
