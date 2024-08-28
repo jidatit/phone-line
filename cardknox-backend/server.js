@@ -19,6 +19,9 @@ app.post("/process-payment", async (req, res) => {
 	const requestData = new URLSearchParams({
 		xKey: "bestcell929419a5ae5ebf49814fe7a23bf151372458c",
 		xCardNum: paymentDetails.cardNumber,
+		xVersion: "5.0.0.",
+		xSoftwareVersion: "1.0.0",
+		xCommand: "cc:sale",
 		xExp: paymentDetails.expiryDate, // Format MMYY
 		xCVV: paymentDetails.cvc,
 		xAmount: paymentDetails.amount,

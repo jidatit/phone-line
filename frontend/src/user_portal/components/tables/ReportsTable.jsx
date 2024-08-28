@@ -38,7 +38,6 @@ const ReportsTable = () => {
 	const [currentPage, setCurrentPage] = useState(0);
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
-	console.log("user", userId);
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);

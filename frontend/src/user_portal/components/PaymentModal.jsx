@@ -13,8 +13,8 @@ const schema = z.object({
 	cardName: z.string().min(1, "Name on Credit Card is required"),
 	cardNumber: z
 		.string()
-		.min(16, "Credit Card Number must be 16 digits")
-		.max(16, "Credit Card Number must be 16 digits"),
+		.min(16, "Smaller! Credit Card Number must be 16 digits")
+		.max(16, "Greater! Credit Card Number must be 16 digits"),
 	expiryDate: z.string().min(5, "Expiry Date is required in MM/YY format"),
 	cvc: z
 		.string()
