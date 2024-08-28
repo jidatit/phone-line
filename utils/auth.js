@@ -14,9 +14,9 @@ const authAccount = CryptoJS.MD5(accountToken + authIntermediate).toString();
 
 export { hash, authApp, authAccount, authId, accountId, packageId };
 
-console.log("hash:", hash);
-console.log("auth_app:", authApp);
-console.log("auth_account:", authAccount);
-console.log("auth_id:", authId);
-console.log("account_id:", accountId);
-console.log("package_id:", packageId);
+//console.log("hash:", hash);
+//console.log("auth_app:", authApp);
+//console.log("auth_account:", authAccount);
+//console.log("auth_id:", authId);
+//console.log("account_id:", accountId);
+//console.log("package_id:", packageId);

@@ -132,7 +132,7 @@ const AllUsersTable = () => {
 				const activatedNumbers = data.activatedNumbers || {}; // Accessing activatedNumbers
 				const uid = doc.id; // Use the document ID as the user ID
 
-				console.log("data", data);
+				//console.log("data", data);
 
 				// Iterate over each simNumber in activatedNumbers
 				return Object.entries(activatedNumbers).flatMap(
@@ -175,7 +175,7 @@ const AllUsersTable = () => {
 			});
 
 			setAllUsersData(usersData);
-			console.log("all user", usersData); // Log the updated `usersData`
+			//console.log("all user", usersData); // Log the updated `usersData`
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
 			toast.error("Error fetching users data");
@@ -280,8 +280,8 @@ const AllUsersTable = () => {
 		}));
 	};
 	const handleDeactivateNumber = async (number, uid) => {
-		console.log("number", number);
-		console.log("uid", uid);
+		//console.log("number", number);
+		//console.log("uid", uid);
 		try {
 			// Make the API request to deactivate the number
 			const apiResponse = await axios.post(
@@ -321,7 +321,7 @@ const AllUsersTable = () => {
 					});
 					getallUsersData();
 
-					console.log(
+					//console.log(
 						"Number deactivated and removed from Firestore successfully",
 					);
 				} else {
@@ -384,8 +384,8 @@ const AllUsersTable = () => {
 		}
 	};
 	const terminateUser = async (domainUserId, userId) => {
-		console.log("domainUserId:", domainUserId);
-		console.log("userId:", userId);
+		//console.log("domainUserId:", domainUserId);
+		//console.log("userId:", userId);
 
 		try {
 			// Make the API request to terminate the user using their domain user ID

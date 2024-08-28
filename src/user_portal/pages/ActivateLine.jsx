@@ -165,11 +165,11 @@ const ActivateLine = () => {
 							}
 						});
 					} else {
-						console.log("Failed to modify caller ID");
+						//console.log("Failed to modify caller ID");
 						toast.error("Failed to modify caller ID");
 					}
 				} else {
-					console.log("US number not found in the response");
+					//console.log("US number not found in the response");
 					toast.error("US number not found in the response");
 				}
 
@@ -206,7 +206,7 @@ const ActivateLine = () => {
 				setLoading(false);
 				setDisplayNumbers(true);
 			} else {
-				console.log("Failed to activate SIM");
+				//console.log("Failed to activate SIM");
 				toast.error("Failed to activate SIM");
 				setmsg("Failed to Activate");
 				setLoading(false);
@@ -223,30 +223,30 @@ const ActivateLine = () => {
 	const handleConfirmSimNumber = (e) => {
 		e.preventDefault();
 		if (simNumber !== "") {
-			console.log("Entered Sim Number is: ", simNumber);
+			//console.log("Entered Sim Number is: ", simNumber);
 			setSimNumberState(false);
 			setDatePickerState(true);
 		} else {
-			console.log("Please Enter the Sim Number");
+			//console.log("Please Enter the Sim Number");
 			toast.error("Please Enter the Sim Number");
 		}
 	};
 
 	const handleConfirmDates = async () => {
 		if (startDate && endDate) {
-			console.log("Start Date: ", startDate.format("YYYY-MM-DD"));
-			console.log("End Date: ", endDate.format("YYYY-MM-DD"));
+			//console.log("Start Date: ", startDate.format("YYYY-MM-DD"));
+			//console.log("End Date: ", endDate.format("YYYY-MM-DD"));
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
 			if (userData) {
 				activateSim();
 			} else {
-				console.log("Domain user ID not found");
+				//console.log("Domain user ID not found");
 				toast.error("Domain user ID not found");
 			}
 		} else {
-			console.log("Please select both start and end dates");
+			//console.log("Please select both start and end dates");
 			toast.error("Please select both start and end dates");
 		}
 	};

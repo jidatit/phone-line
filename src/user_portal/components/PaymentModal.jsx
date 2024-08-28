@@ -35,7 +35,7 @@ const PaymentModal = ({ open, handleClose }) => {
 			...data,
 			amount: Number.parseFloat(data.amount),
 		};
-		console.log("Form Data", formData);
+		//console.log("Form Data", formData);
 		// Handle payment process here
 	};
 

@@ -49,7 +49,7 @@ const Layout = () => {
 			if (dataDoc.exists()) {
 				setAdminData(dataDoc.data());
 			} else {
-				console.log("No such document!");
+				//console.log("No such document!");
 			}
 		} catch (error) {
 			console.error("Error fetching user data: ", error);

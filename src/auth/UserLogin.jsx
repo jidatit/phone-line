@@ -15,7 +15,7 @@ const UserLogin = () => {
 		e.preventDefault();
 		try {
 			await signInWithEmailAndPassword(auth, email, password);
-			console.log("User Successfully Logged In");
+			//console.log("User Successfully Logged In");
 			toast.success("User Successfully Logged In");
 		} catch (error) {
 			console.error("Error Logging In User : ", error.message);

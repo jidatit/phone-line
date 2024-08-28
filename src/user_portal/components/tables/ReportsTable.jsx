@@ -38,7 +38,7 @@ const ReportsTable = () => {
 	const [currentPage, setCurrentPage] = useState(0);
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
-	console.log("user", userId);
+	//console.log("user", userId);
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -148,7 +148,7 @@ const ReportsTable = () => {
 				// Set the transformed data to state
 				setNumbersData(numbersData);
 			} else {
-				console.log("No such document!");
+				//console.log("No such document!");
 				setNumbersData([]); // Set empty data if no document found
 			}
 		} catch (error) {

@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
 					const adminData = adminDocSnapshot.data();
 					return adminData;
 				} else {
-					console.log("No user or admin exists.");
+					//console.log("No user or admin exists.");
 				}
 			}
 		} catch (error) {

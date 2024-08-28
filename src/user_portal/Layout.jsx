@@ -40,7 +40,7 @@ const Layout = () => {
 
 	const handleResize = useCallback(() => {
 		const isDesktop = window.innerWidth > 768;
-		console.log("desk", isDesktop);
+		//console.log("desk", isDesktop);
 		setDisplayName(isDesktop);
 		setShowNameInMenu(!isDesktop);
 		setName(currentUser?.data?.name);
