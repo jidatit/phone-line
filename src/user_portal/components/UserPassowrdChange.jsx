@@ -8,7 +8,6 @@ import {
 	reauthenticateWithCredential,
 	updatePassword,
 } from "firebase/auth";
-import bcrypt from "bcryptjs";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
