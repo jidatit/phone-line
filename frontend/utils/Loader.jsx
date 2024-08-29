@@ -21,10 +21,10 @@ const Loader = () => {
 	return (
 		<>
 			<div className="flex justify-center items-center">
-				<div className="flex-col gap-4 w-full flex items-center justify-center">
-					<div className="w-20 h-20 border-4 border-transparent text-blue-400 text-4xl animate-spin flex items-center justify-center border-t-blue-400 rounded-full">
-						<div className="w-16 h-16 border-4 border-transparent text-red-400 text-2xl animate-spin flex items-center justify-center border-t-red-400 rounded-full" />
-					</div>
+				<div className="w-full gap-x-2 flex justify-center items-center">
+					<div className="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"></div>
+					<div className="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"></div>
+					<div className="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"></div>
 					<p className="text-blue-400 text-2xl mt-4 ">{message}</p>
 				</div>
 			</div>

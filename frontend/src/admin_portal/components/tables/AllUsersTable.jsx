@@ -17,9 +17,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../../Firebase";
 import dayjs from "dayjs"; // Import dayjs or any other date formatting library
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import { hash, authAccount, authId } from "../../../../utils/auth";
+
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -51,6 +52,7 @@ const AllUsersTable = () => {
 	const [openMobile, setOpenMobile] = useState(false);
 	const handleOpenMobile = () => setOpenMobile(true);
 	const handleCloseMobile = () => setOpenMobile(false);
+	const [loading, setLoading] = useState(false);
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
 	const handleOpenExtendExpirationDate = () =>
@@ -381,6 +383,7 @@ const AllUsersTable = () => {
 	};
 	const terminateUser = async (domainUserId, userId) => {
 		try {
+			setLoading(true);
 			// Make the API request to terminate the user using their domain user ID
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
@@ -423,15 +426,18 @@ const AllUsersTable = () => {
 
 					// Update the Firestore document with the new status
 					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
-
+					setLoading(false);
+					toast.success("User is Terminated Successfully");
 					// Optionally, refresh the UI or data
 					getallUsersData();
 				}
 			} else {
+				setLoading(false);
 				console.error("API response error:", apiResponse.data);
 				toast.error("Failed to terminate the user.");
 			}
 		} catch (error) {
+			setLoading(false);
 			console.error("Error terminating user:", error.message);
 			toast.error(error.message);
 		}
@@ -443,6 +449,7 @@ const AllUsersTable = () => {
 
 	return (
 		<>
+			<ToastContainer />
 			<div className="w-full flex flex-row justify-between items-center mb-8">
 				<h1 className="text-black text-xl font-bold">All Numbers</h1>
 			</div>
@@ -756,7 +763,7 @@ const AllUsersTable = () => {
 												}}
 												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
 											>
-												Terminate User
+												{loading ? "Terminating" : "Terminate User"}
 											</button>
 										</td>
 									</tr>

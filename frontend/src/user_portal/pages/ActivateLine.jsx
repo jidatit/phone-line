@@ -59,21 +59,38 @@ const ActivateLine = () => {
 			setLoading(true);
 
 			// Step 1: Create a user via the API before activating the SIM
-			const userCreationResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
+			let userCreationResponse;
+			try {
+				userCreationResponse = await axios.post(
+					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+					{
+						auth: {
+							auth_id: authId,
+							hash: hash,
+							auth: authAccount,
+						},
+						func_name: "prov_create_user",
+						data: {
+							account_id: accountId,
+							name: simNumber, // Use simNumber as the name for the API request
+						},
 					},
-					func_name: "prov_create_user",
-					data: {
-						account_id: accountId,
-						name: simNumber, // Use simNumber as the name for the API request
-					},
-				},
-			);
+				);
+			} catch (error) {
+				handleReset();
+				if (axios.isAxiosError(error)) {
+					console.error("API request failed:", error.message);
+					toast.error(error.message);
+				} else {
+					console.error("Unexpected error:", error.message);
+					toast.error(error.message);
+				}
+				toast.error(
+					"Failed to create user via API due to network or server issue",
+				);
+				setLoading(false);
+				return;
+			}
 
 			if (userCreationResponse.data.status !== "OK") {
 				toast.error("Failed to create user via API");
@@ -83,26 +100,42 @@ const ActivateLine = () => {
 			const domainUserId = userCreationResponse.data.data.id;
 
 			// Step 2: Proceed to activate the SIM
-			const apiResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
+			let apiResponse;
+			try {
+				apiResponse = await axios.post(
+					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+					{
+						auth: {
+							auth_id: authId,
+							hash: hash,
+							auth: authAccount,
+						},
+						func_name: "prov_create_mobile",
+						data: {
+							domain_user_id: domainUserId,
+							iccid: simNumber, // Include the SIM number in the API request
+							service_id: packageId,
+							dids: [
+								{ purchase_type: "new", type: "mobile", country: "IL" },
+								{ purchase_type: "new", type: "mobile", country: "US" },
+							],
+						},
 					},
-					func_name: "prov_create_mobile",
-					data: {
-						domain_user_id: domainUserId,
-						iccid: simNumber, // Include the SIM number in the API request
-						service_id: packageId,
-						dids: [
-							{ purchase_type: "new", type: "mobile", country: "IL" },
-							{ purchase_type: "new", type: "mobile", country: "US" },
-						],
-					},
-				},
-			);
+				);
+				toast.success("Line is Activated Successfully");
+			} catch (error) {
+				handleReset();
+				if (axios.isAxiosError(error)) {
+					console.error("API request failed:", error.message);
+					toast.error(error.message);
+				} else {
+					console.error("Unexpected error:", error.message);
+					toast.error(error.message);
+				}
+				toast.error("Failed to activate SIM due to network or server issue");
+				setLoading(false);
+				return;
+			}
 
 			if (apiResponse.data.status === "OK") {
 				const notes = apiResponse.data.data.notes;
@@ -130,33 +163,52 @@ const ActivateLine = () => {
 					};
 				});
 				setNumbers(newNumbers);
+
 				// Step 3: Modify caller ID for US numbers
 				const usNumber = newNumbers.find((num) => num.type === "US");
 				if (usNumber) {
-					const modifyResponse = await axios.post(
-						"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-						{
-							auth: {
-								auth_id: authId,
-								hash: hash,
-								auth: authAccount,
+					let modifyResponse;
+					try {
+						modifyResponse = await axios.post(
+							"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+							{
+								auth: {
+									auth_id: authId,
+									hash: hash,
+									auth: authAccount,
+								},
+								func_name: "modify_caller_ids",
+								data: {
+									domain_user_id: domainUserId,
+									caller_ids_to_update: [
+										{
+											id: -1,
+											owner_id: null,
+											status: "on",
+											cid_name: "1",
+											number: usNumber.number,
+											to_remove: false,
+										},
+									],
+								},
 							},
-							func_name: "modify_caller_ids",
-							data: {
-								domain_user_id: domainUserId,
-								caller_ids_to_update: [
-									{
-										id: -1,
-										owner_id: null,
-										status: "on",
-										cid_name: "1",
-										number: usNumber.number,
-										to_remove: false,
-									},
-								],
-							},
-						},
-					);
+						);
+					} catch (error) {
+						if (axios.isAxiosError(error)) {
+							handleReset();
+							console.error("API request failed:", error.message);
+							toast.error(error.message);
+						} else {
+							handleReset();
+							console.error("Unexpected error:", error.message);
+							toast.error(error.message);
+						}
+						toast.error(
+							"Failed to modify caller ID due to network or server issue",
+						);
+						setLoading(false);
+						return;
+					}
 
 					if (modifyResponse.data.status === "OK") {
 						newNumbers.forEach((num) => {
@@ -165,10 +217,12 @@ const ActivateLine = () => {
 							}
 						});
 					} else {
+						handleReset();
 						console.log("Failed to modify caller ID");
 						toast.error("Failed to modify caller ID");
 					}
 				} else {
+					handleReset();
 					console.log("US number not found in the response");
 					toast.error("US number not found in the response");
 				}
@@ -206,14 +260,16 @@ const ActivateLine = () => {
 				setLoading(false);
 				setDisplayNumbers(true);
 			} else {
+				handleReset();
 				console.log("Failed to activate SIM");
 				toast.error("Failed to activate SIM");
 				setmsg("Failed to Activate");
 				setLoading(false);
 			}
 		} catch (error) {
-			console.error("Error activating SIM:", error.message);
-			toast.error(error.message);
+			handleReset();
+			console.error("Unexpected error during SIM activation:", error.message);
+			toast.error("Unexpected error occurred during SIM activation");
 			setLoading(false);
 		}
 	};
@@ -224,6 +280,7 @@ const ActivateLine = () => {
 		e.preventDefault();
 		if (simNumber !== "") {
 			console.log("Entered Sim Number is: ", simNumber);
+
 			setSimNumberState(false);
 			setDatePickerState(true);
 		} else {
@@ -239,6 +296,7 @@ const ActivateLine = () => {
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
+
 			if (userData) {
 				activateSim();
 			} else {
@@ -254,115 +312,117 @@ const ActivateLine = () => {
 		return <Loader />;
 	}
 	return (
-		<div className="w-full h-auto flex flex-col justify-start items-start gap-4 lg:px-52 px-4">
+		<>
 			<ToastContainer />
-			{simNumberState && (
-				<>
-					<h1 className="w-full text-xl font-bold text-center text-black my-3">
-						Kindly Enter Your Sim Number
-					</h1>
-					<h2 className="w-full text-base font-medium text-gray-500">
-						Sim Number
-					</h2>
-					<Box
-						sx={{ width: "100%" }}
-						component="form"
-						noValidate
-						autoComplete="off"
-					>
-						<TextField
-							id="sim-number"
-							label="Sim Number"
-							value={simNumber}
-							onChange={(e) => setSimNumber(e.target.value)}
-							fullWidth
-						/>
-					</Box>
-					<div className="w-full flex justify-end items-center">
-						<button
-							onClick={handleConfirmSimNumber}
-							className="px-6 py-2 flex flex-row justify-center items-center gap-2 rounded-md text-white bg-[#FF6978]"
-						>
-							<h2 className="font-semibold">Confirm</h2>
-							<EastIcon />
-						</button>
-					</div>
-				</>
-			)}
-			{datePickerState && (
-				<>
-					<h1 className="w-full text-xl font-bold text-center text-black my-3">
-						Select the dates to activate the line for
-					</h1>
-					<div className="w-full flex flex-row justify-start items-start gap-4">
-						<h1 className="font-semibold">
-							Start Date: {startDate ? startDate.format("YYYY-MM-DD") : ""}
+			<div className="w-full h-auto flex flex-col justify-start items-start gap-4 lg:px-52 px-4">
+				{simNumberState && (
+					<>
+						<h1 className="w-full text-xl font-bold text-center text-black my-3">
+							Kindly Enter Your Sim Number
 						</h1>
-						<h1 className="font-semibold">
-							End Date: {endDate ? endDate.format("YYYY-MM-DD") : ""}
-						</h1>
-					</div>
-					<div className="w-full flex lg:flex-row flex-col justify-center items-center gap-2 border border-gray-300 pt-8">
-						{/* Start Date */}
-						<LocalizationProvider dateAdapter={AdapterDayjs}>
-							<DateCalendar
-								value={startDate}
-								onChange={(newValue) => setStartDate(newValue)}
-							/>
-						</LocalizationProvider>
-						{/* End Date */}
-						<LocalizationProvider dateAdapter={AdapterDayjs}>
-							<DateCalendar
-								value={endDate}
-								onChange={(newValue) => setEndDate(newValue)}
-							/>
-						</LocalizationProvider>
-					</div>
-					<div className="w-full flex justify-center items-center">
-						<button
-							onClick={handleConfirmDates}
-							className="w-full lg:w-[50%] px-6 py-3 font-semibold rounded-md text-lg text-white bg-[#FF6978]"
+						<h2 className="w-full text-base font-medium text-gray-500">
+							Sim Number
+						</h2>
+						<Box
+							sx={{ width: "100%" }}
+							component="form"
+							noValidate
+							autoComplete="off"
 						>
-							Confirm Dates
-						</button>
-					</div>
-				</>
-			)}
+							<TextField
+								id="sim-number"
+								label="Sim Number"
+								value={simNumber}
+								onChange={(e) => setSimNumber(e.target.value)}
+								fullWidth
+							/>
+						</Box>
+						<div className="w-full flex justify-end items-center">
+							<button
+								onClick={handleConfirmSimNumber}
+								className="px-6 py-2 flex flex-row justify-center items-center gap-2 rounded-md text-white bg-[#FF6978]"
+							>
+								<h2 className="font-semibold">Confirm</h2>
+								<EastIcon />
+							</button>
+						</div>
+					</>
+				)}
+				{datePickerState && (
+					<>
+						<h1 className="w-full text-xl font-bold text-center text-black my-3">
+							Select the dates to activate the line for
+						</h1>
+						<div className="w-full flex flex-row justify-start items-start gap-4">
+							<h1 className="font-semibold">
+								Start Date: {startDate ? startDate.format("YYYY-MM-DD") : ""}
+							</h1>
+							<h1 className="font-semibold">
+								End Date: {endDate ? endDate.format("YYYY-MM-DD") : ""}
+							</h1>
+						</div>
+						<div className="w-full flex lg:flex-row flex-col justify-center items-center gap-2 border border-gray-300 pt-8">
+							{/* Start Date */}
+							<LocalizationProvider dateAdapter={AdapterDayjs}>
+								<DateCalendar
+									value={startDate}
+									onChange={(newValue) => setStartDate(newValue)}
+								/>
+							</LocalizationProvider>
+							{/* End Date */}
+							<LocalizationProvider dateAdapter={AdapterDayjs}>
+								<DateCalendar
+									value={endDate}
+									onChange={(newValue) => setEndDate(newValue)}
+								/>
+							</LocalizationProvider>
+						</div>
+						<div className="w-full flex justify-center items-center">
+							<button
+								onClick={handleConfirmDates}
+								className="w-full lg:w-[50%] px-6 py-3 font-semibold rounded-md text-lg text-white bg-[#FF6978]"
+							>
+								Confirm Dates
+							</button>
+						</div>
+					</>
+				)}
 
-			{displayNumbers && (
-				<>
-					<h1 className="w-full text-xl font-bold text-center text-black my-3">
-						Your Line has been activated and the expiration date is:{" "}
-						{endDate ? endDate.format("YYYY-MM-DD") : ""}
-					</h1>
-					<h1 className="w-full text-lg font-bold text-center text-black">
-						Your New Phone Number
-					</h1>
-					<div className="w-full flex flex-row justify-center items-center gap-6">
-						{/* Display numbers from state */}
-						{/* Example: */}
-						<h1 className="font-bold text-lg text-[#340068]">
-							{/* {numbers[0].type}: Number: +{} */}
-							{numbers[0]?.type} : {numbers[0]?.number}
+				{displayNumbers && (
+					<>
+						<h1 className="w-full text-xl font-bold text-center text-black my-3">
+							Your Line has been activated and the expiration date is:{" "}
+							{endDate ? endDate.format("YYYY-MM-DD") : ""}
 						</h1>
-						<h1 className="font-bold text-lg text-[#FF6978]">
-							{numbers[1]?.type} : {numbers[1]?.number}
+						<h1 className="w-full text-lg font-bold text-center text-black">
+							Your New Phone Number
 						</h1>
+						<div className="w-full flex flex-row justify-center items-center gap-6">
+							{/* Display numbers from state */}
+							{/* Example: */}
+							<h1 className="font-bold text-lg text-[#340068]">
+								{/* {numbers[0].type}: Number: +{} */}
+								{numbers[0]?.type} : {numbers[0]?.number}
+							</h1>
+							<h1 className="font-bold text-lg text-[#FF6978]">
+								{numbers[1]?.type} : {numbers[1]?.number}
+							</h1>
+						</div>
+					</>
+				)}
+				{msg && (
+					<div className=" w-full text-red-700 text-2xl italic text-center flex gap-3 items-center justify-center">
+						{msg}
+						<button
+							className=" px-3 py-1 text-base text-white bg-red-600 rounded-md"
+							onClick={() => handleReset()}
+						>
+							Go back
+						</button>
 					</div>
-				</>
-			)}
-			{msg && (
-				<div className=" w-full text-red-700 text-2xl italic text-center flex gap-3 items-center justify-center">
-					{msg}
-					<button
-						className=" px-3 py-1 text-base text-white bg-red-600 rounded-md"
-						onClick={() => handleReset()}
-					>
-						Go back
-					</button>
-				</div>
-			)}
-		</div>
+				)}
+			</div>
+		</>
 	);
 };
 
