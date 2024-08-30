@@ -17,6 +17,7 @@ const UserLogin = () => {
             console.log('Admin Successfully Logged In');
         } catch (error) {
             console.error('Error Logging In Admin : ', error.message);
+            toast.error(error.message);
         }
     };
 

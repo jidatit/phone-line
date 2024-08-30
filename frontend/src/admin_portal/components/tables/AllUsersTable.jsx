@@ -52,7 +52,7 @@ const AllUsersTable = () => {
 	const [openMobile, setOpenMobile] = useState(false);
 	const handleOpenMobile = () => setOpenMobile(true);
 	const handleCloseMobile = () => setOpenMobile(false);
-	const [loading, setLoading] = useState(false);
+	const [loadingStates, setLoadingStates] = useState({});
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
 	const handleOpenExtendExpirationDate = () =>
@@ -381,9 +381,12 @@ const AllUsersTable = () => {
 			toast.error(error.message);
 		}
 	};
-	const terminateUser = async (domainUserId, userId) => {
+	const terminateUser = async (domainUserId, userId,index) => {
 		try {
-			setLoading(true);
+			setLoadingStates((prevState) => ({
+				...prevState,
+				[index]: true,
+			}));
 			// Make the API request to terminate the user using their domain user ID
 			const apiResponse = await axios.post(
 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
@@ -426,18 +429,27 @@ const AllUsersTable = () => {
 
 					// Update the Firestore document with the new status
 					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
-					setLoading(false);
+					setLoadingStates((prevState) => ({
+						...prevState,
+						[index]: false,
+					}));
 					toast.success("User is Terminated Successfully");
 					// Optionally, refresh the UI or data
 					getallUsersData();
 				}
 			} else {
-				setLoading(false);
+				setLoadingStates((prevState) => ({
+					...prevState,
+					[index]: false,
+				}));
 				console.error("API response error:", apiResponse.data);
 				toast.error("Failed to terminate the user.");
 			}
 		} catch (error) {
-			setLoading(false);
+			setLoadingStates((prevState) => ({
+				...prevState,
+				[index]: false,
+			}));
 			console.error("Error terminating user:", error.message);
 			toast.error(error.message);
 		}
@@ -748,10 +760,10 @@ const AllUsersTable = () => {
 											</button>
 										</td> */}
 										<td
-											className={`py-2 px-3 text-base  font-normal ${
-												index == 0
+											className={`py-2 px-3 text-base font-normal ${
+												index === 0
 													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
+													: index === rowsToShow?.length
 														? "border-y"
 														: "border-t"
 											} whitespace-nowrap`}
@@ -759,11 +771,11 @@ const AllUsersTable = () => {
 											<button
 												type="button"
 												onClick={() => {
-													terminateUser(data?.domainUserId, data?.userId);
+													terminateUser(data?.domainUserId, data?.userId, index);
 												}}
 												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
 											>
-												{loading ? "Terminating" : "Terminate User"}
+												{loadingStates[index] ? "Terminating" : "Terminate User"}
 											</button>
 										</td>
 									</tr>
