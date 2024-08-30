@@ -179,7 +179,7 @@ const Layout = () => {
 								{showNameInMenu && (
 									<MenuItem className="gap-2">
 										{" "}
-										<AccountBoxOutlinedIcon /> {name}{" "}
+										<AccountBoxOutlinedIcon /> {currentUser?.data?.name}{" "}
 									</MenuItem>
 								)}
 								<MenuItem onClick={NavToChangePass} className="gap-2">
