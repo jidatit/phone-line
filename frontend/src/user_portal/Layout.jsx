@@ -12,7 +12,7 @@ import UserAvatar from "../assets/Avatar.png";
 import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
 import { useAuth } from "../../AuthContext";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 const styleLogout = {
 	position: "absolute",
@@ -86,7 +86,6 @@ const Layout = () => {
 
 	return currentUser && userType === "user" ? (
 		<>
-			<ToastContainer />
 			<div className="w-full flex flex-cols relative">
 				{/* Right Navbar */}
 				<div

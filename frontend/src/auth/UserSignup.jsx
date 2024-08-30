@@ -50,7 +50,7 @@ const UserSignup = () => {
 			});
 
 			// Show success message and reset form
-			toast.success("User Registered");
+
 			setUserData({
 				name: "",
 				email: "",
@@ -61,6 +61,7 @@ const UserSignup = () => {
 
 			// Navigate to user portal
 			navigate("/user_portal");
+			toast.success("User Registered");
 		} catch (error) {
 			// Handle any errors during the signup process
 			toast.error(error.message);
@@ -73,9 +74,8 @@ const UserSignup = () => {
 
 	return (
 		<>
-		<ToastContainer />
+			<ToastContainer />
 			<div className="w-full min-h-screen flex flex-col justify-center items-center bg-[#340068]">
-				
 				<div className="w-[90%] relative md:w-[70%] bg-[#F1F1F1] pt-[30px] pb-[40px] rounded-[10px] flex flex-col justify-center items-center gap-2">
 					<h2 className="text-center font-bold lg:text-[30px] md:text-[25px] text-[20px] mb-4">
 						Sign up
