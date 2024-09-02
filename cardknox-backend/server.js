@@ -16,26 +16,27 @@ app.use(
 app.post("/process-payment", async (req, res) => {
 	const paymentDetails = req.body;
 
-	const requestData = new URLSearchParams({
+	const requestData = {
 		xKey: "bestcell929419a5ae5ebf49814fe7a23bf151372458c",
-		xCardNum: paymentDetails.cardNumber,
-		xVersion: "5.0.0.",
+		xVersion: "5.0.0",
 		xSoftwareVersion: "1.0.0",
-		xCommand: "cc:sale",
+		xSoftwareName: "PhoneLIne",
+		xCommand: "cc:Credit",
+		xCardNum: paymentDetails.cardNumber,
 		xExp: paymentDetails.expiryDate, // Format MMYY
 		xCVV: paymentDetails.cvc,
 		xAmount: paymentDetails.amount,
 		xName: paymentDetails.cardName,
 		xCustom01: paymentDetails.simNumber, // Custom fields as needed
-	});
-
+	};
+	console.log("request data", requestData);
 	try {
 		const response = await axios.post(
 			"https://x1.cardknox.com/gatewayjson",
-			requestData.toString(),
+			requestData,
 			{
 				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
+					"Content-Type": "application/json",
 				},
 			},
 		);
