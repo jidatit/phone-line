@@ -21,7 +21,7 @@ app.post("/process-payment", async (req, res) => {
 		xVersion: "5.0.0",
 		xSoftwareVersion: "1.0.0",
 		xSoftwareName: "PhoneLIne",
-		xCommand: "cc:Credit",
+		xCommand: "cc:sale",
 		xCardNum: paymentDetails.cardNumber,
 		xExp: paymentDetails.expiryDate, // Format MMYY
 		xCVV: paymentDetails.cvc,
