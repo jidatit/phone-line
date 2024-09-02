@@ -54,225 +54,278 @@ const ActivateLine = () => {
 		}
 	};
 
+	// const activateSim = async () => {
+	// 	try {
+	// 		setLoading(true);
+
+	// 		// Step 1: Create a user via the API before activating the SIM
+	// 		let userCreationResponse;
+	// 		try {
+	// 			userCreationResponse = await axios.post(
+	// 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+	// 				{
+	// 					auth: {
+	// 						auth_id: authId,
+	// 						hash: hash,
+	// 						auth: authAccount,
+	// 					},
+	// 					func_name: "prov_create_user",
+	// 					data: {
+	// 						account_id: accountId,
+	// 						name: simNumber, // Use simNumber as the name for the API request
+	// 					},
+	// 				},
+	// 			);
+	// 		} catch (error) {
+	// 			handleReset();
+	// 			if (axios.isAxiosError(error)) {
+	// 				console.error("API request failed:", error.message);
+	// 				toast.error(error.message);
+	// 			} else {
+	// 				console.error("Unexpected error:", error.message);
+	// 				toast.error(error.message);
+	// 			}
+	// 			toast.error(
+	// 				"Failed to create user via API due to network or server issue",
+	// 			);
+	// 			setLoading(false);
+	// 			return;
+	// 		}
+
+	// 		if (userCreationResponse.data.status !== "OK") {
+	// 			toast.error("Failed to create user via API");
+	// 			setLoading(false);
+	// 			return;
+	// 		}
+	// 		const domainUserId = userCreationResponse.data.data.id;
+
+	// 		// Step 2: Proceed to activate the SIM
+	// 		let apiResponse;
+	// 		try {
+	// 			apiResponse = await axios.post(
+	// 				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+	// 				{
+	// 					auth: {
+	// 						auth_id: authId,
+	// 						hash: hash,
+	// 						auth: authAccount,
+	// 					},
+	// 					func_name: "prov_create_mobile",
+	// 					data: {
+	// 						domain_user_id: domainUserId,
+	// 						iccid: simNumber, // Include the SIM number in the API request
+	// 						service_id: packageId,
+	// 						dids: [
+	// 							{ purchase_type: "new", type: "mobile", country: "IL" },
+	// 							{ purchase_type: "new", type: "mobile", country: "US" },
+	// 						],
+	// 					},
+	// 				},
+	// 			);
+	// 			toast.success("Line is Activated Successfully");
+	// 		} catch (error) {
+	// 			handleReset();
+	// 			if (axios.isAxiosError(error)) {
+	// 				console.error("API request failed:", error.message);
+	// 				toast.error(error.message);
+	// 			} else {
+	// 				console.error("Unexpected error:", error.message);
+	// 				toast.error(error.message);
+	// 			}
+	// 			toast.error("Failed to activate SIM due to network or server issue");
+	// 			setLoading(false);
+	// 			return;
+	// 		}
+
+	// 		if (apiResponse.data.status === "OK") {
+	// 			const notes = apiResponse.data.data.notes;
+	// 			const msisdn = apiResponse.data.data.msisdn;
+	// 			const endpointId = apiResponse.data.data.endpoint_id;
+
+	// 			// Convert dayjs objects to JavaScript Date objects
+	// 			const convertedStartDate = startDate ? startDate.toDate() : null;
+	// 			const convertedEndDate = endDate ? endDate.toDate() : null;
+
+	// 			const newNumbers = notes.map((note) => {
+	// 				const [country, number] = note.split(" הופעל הוא ");
+	// 				const type = country.includes("IL") ? "IL" : "US";
+	// 				return {
+	// 					number: number.trim(),
+	// 					type,
+	// 					endpointId,
+	// 					msisdn,
+	// 					modify: false,
+	// 					startDate: convertedStartDate,
+	// 					endDate: convertedEndDate,
+	// 					simNumber, // Store the entered SIM number with each number entry
+	// 					Activated: "Activated",
+	// 					domainUserId: domainUserId,
+	// 				};
+	// 			});
+	// 			setNumbers(newNumbers);
+
+	// 			// Step 3: Modify caller ID for US numbers
+	// 			const usNumber = newNumbers.find((num) => num.type === "US");
+	// 			if (usNumber) {
+	// 				let modifyResponse;
+	// 				try {
+	// 					modifyResponse = await axios.post(
+	// 						"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+	// 						{
+	// 							auth: {
+	// 								auth_id: authId,
+	// 								hash: hash,
+	// 								auth: authAccount,
+	// 							},
+	// 							func_name: "modify_caller_ids",
+	// 							data: {
+	// 								domain_user_id: domainUserId,
+	// 								caller_ids_to_update: [
+	// 									{
+	// 										id: -1,
+	// 										owner_id: null,
+	// 										status: "on",
+	// 										cid_name: "1",
+	// 										number: usNumber.number,
+	// 										to_remove: false,
+	// 									},
+	// 								],
+	// 							},
+	// 						},
+	// 					);
+	// 				} catch (error) {
+	// 					if (axios.isAxiosError(error)) {
+	// 						handleReset();
+	// 						console.error("API request failed:", error.message);
+	// 						toast.error(error.message);
+	// 					} else {
+	// 						handleReset();
+	// 						console.error("Unexpected error:", error.message);
+	// 						toast.error(error.message);
+	// 					}
+	// 					toast.error(
+	// 						"Failed to modify caller ID due to network or server issue",
+	// 					);
+	// 					setLoading(false);
+	// 					return;
+	// 				}
+
+	// 				if (modifyResponse.data.status === "OK") {
+	// 					newNumbers.forEach((num) => {
+	// 						if (num.type === "US" && num.number === usNumber.number) {
+	// 							num.modify = true;
+	// 						}
+	// 					});
+	// 				} else {
+	// 					handleReset();
+	// 					console.log("Failed to modify caller ID");
+	// 					toast.error("Failed to modify caller ID");
+	// 				}
+	// 			} else {
+	// 				handleReset();
+	// 				console.log("US number not found in the response");
+	// 				toast.error("US number not found in the response");
+	// 			}
+
+	// 			// Step 4: Store the activated numbers in Firestore, organized by simNumber
+	// 			const userDocRef = doc(db, "users", userId);
+	// 			const userDoc = await getDoc(userDocRef);
+	// 			let existingData = userDoc.exists()
+	// 				? userDoc.data().activatedNumbers || {}
+	// 				: {};
+
+	// 			// Group numbers by IL and US
+	// 			const groupedNumbers = newNumbers.reduce((acc, num) => {
+	// 				if (!acc[num.type]) {
+	// 					acc[num.type] = [];
+	// 				}
+	// 				acc[num.type].push(num);
+	// 				return acc;
+	// 			}, {});
+
+	// 			// Merge new data with existing data, keyed by simNumber
+	// 			const updatedNumbers = {
+	// 				...existingData,
+	// 				[simNumber]: {
+	// 					IL: groupedNumbers.IL || [],
+	// 					US: groupedNumbers.US || [],
+	// 				},
+	// 			};
+
+	// 			// Update Firestore with the merged data
+	// 			await updateDoc(userDocRef, {
+	// 				activatedNumbers: updatedNumbers,
+	// 			});
+
+	// 			setLoading(false);
+	// 			setDisplayNumbers(true);
+	// 		} else {
+	// 			handleReset();
+	// 			console.log("Failed to activate SIM");
+	// 			toast.error("Failed to activate SIM");
+	// 			setmsg("Failed to Activate");
+	// 			setLoading(false);
+	// 		}
+	// 	} catch (error) {
+	// 		handleReset();
+	// 		console.error("Unexpected error during SIM activation:", error.message);
+	// 		toast.error("Unexpected error occurred during SIM activation");
+	// 		setLoading(false);
+	// 	}
+	// };
+
 	const activateSim = async () => {
 		try {
 			setLoading(true);
-
-			// Step 1: Create a user via the API before activating the SIM
-			let userCreationResponse;
-			try {
-				userCreationResponse = await axios.post(
-					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-					{
-						auth: {
-							auth_id: authId,
-							hash: hash,
-							auth: authAccount,
-						},
-						func_name: "prov_create_user",
-						data: {
-							account_id: accountId,
-							name: simNumber, // Use simNumber as the name for the API request
-						},
-					},
-				);
-			} catch (error) {
+	
+			const response = await axios.post("http://localhost:3000/activate-sim", {
+				authId,
+				hash,
+				authAccount,
+				accountId,
+				simNumber,
+				packageId,
+				startDate,
+				endDate,
+			});
+	
+			const { step1, step2, step3 } = response.data;
+	
+			if (step1.status === "Failed") {
+				toast.error(`Step 1 failed: ${step1.error}`);
+				
+				setLoading(false);
 				handleReset();
-				if (axios.isAxiosError(error)) {
-					console.error("API request failed:", error.message);
-					toast.error(error.message);
-				} else {
-					console.error("Unexpected error:", error.message);
-					toast.error(error.message);
-				}
-				toast.error(
-					"Failed to create user via API due to network or server issue",
-				);
-				setLoading(false);
 				return;
 			}
-
-			if (userCreationResponse.data.status !== "OK") {
-				toast.error("Failed to create user via API");
+	
+			if (step2.status === "Failed") {
+				toast.error(`Step 2 failed: ${step2.error}`);
+			
 				setLoading(false);
-				return;
-			}
-			const domainUserId = userCreationResponse.data.data.id;
-
-			// Step 2: Proceed to activate the SIM
-			let apiResponse;
-			try {
-				apiResponse = await axios.post(
-					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-					{
-						auth: {
-							auth_id: authId,
-							hash: hash,
-							auth: authAccount,
-						},
-						func_name: "prov_create_mobile",
-						data: {
-							domain_user_id: domainUserId,
-							iccid: simNumber, // Include the SIM number in the API request
-							service_id: packageId,
-							dids: [
-								{ purchase_type: "new", type: "mobile", country: "IL" },
-								{ purchase_type: "new", type: "mobile", country: "US" },
-							],
-						},
-					},
-				);
-				toast.success("Line is Activated Successfully");
-			} catch (error) {
 				handleReset();
-				if (axios.isAxiosError(error)) {
-					console.error("API request failed:", error.message);
-					toast.error(error.message);
-				} else {
-					console.error("Unexpected error:", error.message);
-					toast.error(error.message);
-				}
-				toast.error("Failed to activate SIM due to network or server issue");
-				setLoading(false);
 				return;
 			}
-
-			if (apiResponse.data.status === "OK") {
-				const notes = apiResponse.data.data.notes;
-				const msisdn = apiResponse.data.data.msisdn;
-				const endpointId = apiResponse.data.data.endpoint_id;
-
-				// Convert dayjs objects to JavaScript Date objects
-				const convertedStartDate = startDate ? startDate.toDate() : null;
-				const convertedEndDate = endDate ? endDate.toDate() : null;
-
-				const newNumbers = notes.map((note) => {
-					const [country, number] = note.split(" הופעל הוא ");
-					const type = country.includes("IL") ? "IL" : "US";
-					return {
-						number: number.trim(),
-						type,
-						endpointId,
-						msisdn,
-						modify: false,
-						startDate: convertedStartDate,
-						endDate: convertedEndDate,
-						simNumber, // Store the entered SIM number with each number entry
-						Activated: "Activated",
-						domainUserId: domainUserId,
-					};
-				});
-				setNumbers(newNumbers);
-
-				// Step 3: Modify caller ID for US numbers
-				const usNumber = newNumbers.find((num) => num.type === "US");
-				if (usNumber) {
-					let modifyResponse;
-					try {
-						modifyResponse = await axios.post(
-							"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-							{
-								auth: {
-									auth_id: authId,
-									hash: hash,
-									auth: authAccount,
-								},
-								func_name: "modify_caller_ids",
-								data: {
-									domain_user_id: domainUserId,
-									caller_ids_to_update: [
-										{
-											id: -1,
-											owner_id: null,
-											status: "on",
-											cid_name: "1",
-											number: usNumber.number,
-											to_remove: false,
-										},
-									],
-								},
-							},
-						);
-					} catch (error) {
-						if (axios.isAxiosError(error)) {
-							handleReset();
-							console.error("API request failed:", error.message);
-							toast.error(error.message);
-						} else {
-							handleReset();
-							console.error("Unexpected error:", error.message);
-							toast.error(error.message);
-						}
-						toast.error(
-							"Failed to modify caller ID due to network or server issue",
-						);
-						setLoading(false);
-						return;
-					}
-
-					if (modifyResponse.data.status === "OK") {
-						newNumbers.forEach((num) => {
-							if (num.type === "US" && num.number === usNumber.number) {
-								num.modify = true;
-							}
-						});
-					} else {
-						handleReset();
-						console.log("Failed to modify caller ID");
-						toast.error("Failed to modify caller ID");
-					}
-				} else {
-					handleReset();
-					console.log("US number not found in the response");
-					toast.error("US number not found in the response");
-				}
-
-				// Step 4: Store the activated numbers in Firestore, organized by simNumber
-				const userDocRef = doc(db, "users", userId);
-				const userDoc = await getDoc(userDocRef);
-				let existingData = userDoc.exists()
-					? userDoc.data().activatedNumbers || {}
-					: {};
-
-				// Group numbers by IL and US
-				const groupedNumbers = newNumbers.reduce((acc, num) => {
-					if (!acc[num.type]) {
-						acc[num.type] = [];
-					}
-					acc[num.type].push(num);
-					return acc;
-				}, {});
-
-				// Merge new data with existing data, keyed by simNumber
-				const updatedNumbers = {
-					...existingData,
-					[simNumber]: {
-						IL: groupedNumbers.IL || [],
-						US: groupedNumbers.US || [],
-					},
-				};
-
-				// Update Firestore with the merged data
-				await updateDoc(userDocRef, {
-					activatedNumbers: updatedNumbers,
-				});
-
-				setLoading(false);
-				setDisplayNumbers(true);
+	
+			if (step3.status === "Failed") {
+				handleReset();
+				toast.error(`Step 3 failed: ${step3.error}`);
 			} else {
-				handleReset();
-				console.log("Failed to activate SIM");
-				toast.error("Failed to activate SIM");
-				setmsg("Failed to Activate");
-				setLoading(false);
+				toast.success("SIM activation successful and caller ID modified");
 			}
+			
+			// Show the numbers obtained from the API
+			setNumbers(step2.numbers);
+			setDisplayNumbers(true);
+	
+			setLoading(false);
 		} catch (error) {
-			handleReset();
 			console.error("Unexpected error during SIM activation:", error.message);
 			toast.error("Unexpected error occurred during SIM activation");
 			setLoading(false);
 		}
 	};
+	
 
 	const [msg, setmsg] = useState();
 
