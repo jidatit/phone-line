@@ -165,9 +165,6 @@ const AllUsersTable = () => {
 									};
 								});
 							} else {
-								console.warn(
-									`Expected an array for numbers, but got ${typeof numbers}`,
-								);
 								return []; // Return an empty array if `numbers` is not an array
 							}
 						}),

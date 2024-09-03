@@ -16,7 +16,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
 
-
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -39,7 +38,7 @@ const ReportsTable = () => {
 	const [currentPage, setCurrentPage] = useState(0);
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
-	const [loading, setLoading] = useState(false)
+	const [loading, setLoading] = useState(false);
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -130,26 +129,32 @@ const ReportsTable = () => {
 				)) {
 					// Iterate over each country (IL, US) and its numbers
 					for (const [country, numbers] of Object.entries(numbersByType)) {
-						numbers.forEach((num) => {
-							numbersData.push({
-								number: num.number,
-								simNumber: simNumber, // Include the simNumber in the output
-								country: country, // Include the country (IL or US) in the output
-								purchaseDate: num.startDate
-									? num.startDate.toDate().toLocaleDateString()
-									: "",
-								expireDate: num.endDate
-									? num.endDate.toDate().toLocaleDateString()
-									: "",
-								status: num.Activated,
+						// Ensure numbers is an array before using forEach
+						if (Array.isArray(numbers)) {
+							numbers.forEach((num) => {
+								numbersData.push({
+									number: num.number,
+									simNumber: simNumber, // Include the simNumber in the output
+									country: country, // Include the country (IL or US) in the output
+									purchaseDate: num.startDate
+										? num.startDate.toDate().toLocaleDateString()
+										: "",
+									expireDate: num.endDate
+										? num.endDate.toDate().toLocaleDateString()
+										: "",
+									status: num.Activated,
+								});
 							});
-						});
+						} else {
+							// console.log("num", numbersData);
+							// Handle cases where numbers is not an array (optional)
+						}
 					}
 				}
+
 				setLoading(false);
 				// Set the transformed data to state
 				setNumbersData(numbersData);
-				
 			} else {
 				setLoading(false);
 				console.log("No such document!");
@@ -365,7 +370,6 @@ const ReportsTable = () => {
 							</thead>
 
 							<tbody>
-								
 								{rowsToShow &&
 									rowsToShow?.map((data, index) => (
 										<tr

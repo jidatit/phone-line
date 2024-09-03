@@ -19,7 +19,7 @@ const serviceAccount = {
 	client_x509_cert_url: process.env.client_x509_cert_url,
 	universe_domain: "googleapis.com",
 };
-console.log("service acco", serviceAccount);
+// console.log("service acco", serviceAccount);
 
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount),
@@ -44,7 +44,7 @@ app.post("/activate-sim", async (req, res) => {
 		endDate,
 		userId,
 	} = req.body;
-	console.log("num", req.body);
+	// console.log("num", req.body);
 	let responseDetails = {
 		step1: { status: "", error: "", domainUserId: null },
 		step2: { status: "", error: "", numbers: [] },
@@ -73,6 +73,7 @@ app.post("/activate-sim", async (req, res) => {
 			responseDetails.step1.status = "Success";
 			responseDetails.step1.domainUserId = userCreationResponse.data.data.id;
 		} catch (error) {
+			console.log("error", error);
 			responseDetails.step1.status = "Failed";
 			responseDetails.step1.error = axios.isAxiosError(error)
 				? error.message
@@ -101,7 +102,12 @@ app.post("/activate-sim", async (req, res) => {
 					},
 				},
 			);
-
+			console.log("apiresp2", apiResponse.data);
+			if (apiResponse.data.error_code === 270) {
+				responseDetails.step2.status = "Failed";
+				responseDetails.step2.error = "sim card already taken";
+				return res.json(responseDetails);
+			}
 			if (apiResponse.data.status !== "OK") {
 				responseDetails.step2.status = "Failed";
 				responseDetails.step2.error = "Failed to activate SIM";
@@ -116,9 +122,11 @@ app.post("/activate-sim", async (req, res) => {
 				const endpointId = apiResponse.data.data.endpoint_id;
 
 				// Convert dayjs objects to JavaScript Date objects
-				const convertedStartDate = startDate ? startDate.toDate() : null;
-				const convertedEndDate = endDate ? endDate.toDate() : null;
+				// const convertedStartDate = startDate ? startDate.toDate() : null;
+				// const convertedEndDate = endDate ? endDate.toDate() : null;
 
+				const convertedStartDate = startDate ? new Date(startDate) : null;
+				const convertedEndDate = endDate ? new Date(endDate) : null;
 				// Mapping over notes to create the numbers array with all required data
 				responseDetails.step2.numbers = notes.map((note) => {
 					const [country, number] = note.split(" הופעל הוא ");
@@ -139,6 +147,7 @@ app.post("/activate-sim", async (req, res) => {
 				});
 			}
 		} catch (error) {
+			console.log("error", error);
 			responseDetails.step2.status = "Failed";
 			responseDetails.step2.error = axios.isAxiosError(error)
 				? error.message
@@ -175,6 +184,13 @@ app.post("/activate-sim", async (req, res) => {
 
 				if (modifyResponse.data.status === "OK") {
 					responseDetails.step3.status = "Success";
+					responseDetails.step2.numbers.forEach((num) => {
+						if (num.type === "US" && num.number === usNumber.number) {
+							num.modify = true;
+						}
+					});
+
+					// console.log("resp3", responseDetails.step2.numbers);
 				} else {
 					responseDetails.step3.status = "Failed";
 					responseDetails.step3.error = "Failed to modify caller ID";
@@ -245,7 +261,7 @@ app.post("/activate-sim", async (req, res) => {
 
 app.post("/terminate-user", async (req, res) => {
 	const { domainUserId, userId, authId, hash, authAccount } = req.body;
-	console.log("ter", req.body);
+	// console.log("ter", req.body);
 	try {
 		// Make the API request to terminate the user
 		const apiResponse = await axios.post(
@@ -266,22 +282,31 @@ app.post("/terminate-user", async (req, res) => {
 
 				// Update only the numbers associated with the specific domainUserId
 				const updatedNumbers = {};
-
 				for (let simNumber in activatedNumbers) {
 					updatedNumbers[simNumber] = {};
 					for (const type in activatedNumbers[simNumber]) {
-						updatedNumbers[simNumber][type] = activatedNumbers[simNumber][
-							type
-						].map((num) => {
-							// Only deactivate numbers with the matching domainUserId
-							if (num.domainUserId === domainUserId) {
-								return { ...num, Activated: "Deactivated" };
-							}
-							return num;
-						});
+						const numbers = activatedNumbers[simNumber][type];
+
+						// Check if numbers is an array
+						if (Array.isArray(numbers)) {
+							updatedNumbers[simNumber][type] = numbers.map((num) => {
+								// Only deactivate numbers with the matching domainUserId
+								if (num.domainUserId === domainUserId) {
+									return { ...num, Activated: "Deactivated" };
+								}
+								return num;
+							});
+						} else {
+							// Handle the case where numbers is not an array
+							// console.warn(
+							// 	`Expected an array for activatedNumbers[${simNumber}][${type}], but found:`,
+							// 	numbers,
+							// );
+							updatedNumbers[simNumber][type] = numbers; // Or handle it differently based on your needs
+						}
 					}
 				}
-
+				// console.log(updatedNumbers);
 				// Update the Firestore document with the new status
 				await userDocRef.update({ activatedNumbers: updatedNumbers });
 				res.status(200).json({

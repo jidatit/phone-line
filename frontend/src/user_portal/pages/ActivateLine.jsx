@@ -30,7 +30,8 @@ const ActivateLine = () => {
 	const [loading, setLoading] = useState(false);
 	const userId = currentUser.uid;
 	const [numbers, setNumbers] = useState("");
-
+	const [showToast, setShowToast] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
 	const handleReset = () => {
 		setSimNumberState(true);
 		setDatePickerState(false);
@@ -303,9 +304,9 @@ const ActivateLine = () => {
 			if (step2.status === "Failed") {
 				toast.error(`Step 2 failed: ${step2.error}`);
 				console.log("status", step2);
-
 				setLoading(false);
 				handleReset();
+				setShowToast(false);
 				return;
 			}
 
@@ -367,6 +368,7 @@ const ActivateLine = () => {
 	if (loading) {
 		return <Loader />;
 	}
+
 	return (
 		<>
 			<ToastContainer />
