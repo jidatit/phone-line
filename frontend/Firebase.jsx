@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDKnKgqc5voVorEYpsTWgM6gM17LLytZtg",
-    authDomain: "phone-line-cb413.firebaseapp.com",
-    projectId: "phone-line-cb413",
-    storageBucket: "phone-line-cb413.appspot.com",
-    messagingSenderId: "426987510181",
-    appId: "1:426987510181:web:84f366f8fc43ea4943704c"
+	apiKey: import.meta.env.VITE_apiKey,
+	authDomain: import.meta.env.VITE_authDomain,
+	projectId: import.meta.env.VITE_projectId,
+	storageBucket: import.meta.env.VITE_storageBucket,
+	messagingSenderId: import.meta.env.VITE_messagingSenderId,
+	appId: import.meta.env.VITE_appId,
 };
 
 export const app = initializeApp(firebaseConfig);

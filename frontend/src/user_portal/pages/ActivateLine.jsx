@@ -277,7 +277,7 @@ const ActivateLine = () => {
 	const activateSim = async () => {
 		try {
 			setLoading(true);
-	
+
 			const response = await axios.post("http://localhost:3000/activate-sim", {
 				authId,
 				hash,
@@ -287,45 +287,48 @@ const ActivateLine = () => {
 				packageId,
 				startDate,
 				endDate,
+				userId,
 			});
-	
+
 			const { step1, step2, step3 } = response.data;
-	
+
 			if (step1.status === "Failed") {
 				toast.error(`Step 1 failed: ${step1.error}`);
-				
+				console.log("status", step1);
 				setLoading(false);
 				handleReset();
 				return;
 			}
-	
+
 			if (step2.status === "Failed") {
 				toast.error(`Step 2 failed: ${step2.error}`);
-			
+				console.log("status", step2);
+
 				setLoading(false);
 				handleReset();
 				return;
 			}
-	
+
 			if (step3.status === "Failed") {
+				console.log("status", step2);
 				handleReset();
 				toast.error(`Step 3 failed: ${step3.error}`);
 			} else {
 				toast.success("SIM activation successful and caller ID modified");
 			}
-			
+
 			// Show the numbers obtained from the API
 			setNumbers(step2.numbers);
 			setDisplayNumbers(true);
-	
+
 			setLoading(false);
 		} catch (error) {
 			console.error("Unexpected error during SIM activation:", error.message);
-			toast.error("Unexpected error occurred during SIM activation");
+			toast.error(error.message);
 			setLoading(false);
+			handleReset();
 		}
 	};
-	
 
 	const [msg, setmsg] = useState();
 

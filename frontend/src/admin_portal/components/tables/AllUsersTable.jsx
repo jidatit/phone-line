@@ -320,7 +320,7 @@ const AllUsersTable = () => {
 					getallUsersData();
 
 					//console.log(
-						// "Number deactivated and removed from Firestore successfully",
+					// "Number deactivated and removed from Firestore successfully",
 					// );
 				} else {
 					console.error("User document not found");
@@ -381,69 +381,112 @@ const AllUsersTable = () => {
 			toast.error(error.message);
 		}
 	};
-	const terminateUser = async (domainUserId, userId,index) => {
+	// const terminateUser = async (domainUserId, userId,index) => {
+	// 	try {
+	// 		setLoadingStates((prevState) => ({
+	// 			...prevState,
+	// 			[index]: true,
+	// 		}));
+	// 		// Make the API request to terminate the user using their domain user ID
+	// 		const apiResponse = await axios.post(
+	// 			"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+	// 			{
+	// 				auth: {
+	// 					auth_id: authId,
+	// 					hash: hash,
+	// 					auth: authAccount,
+	// 				},
+	// 				func_name: "prov_terminate_user",
+	// 				data: { domain_user_id: domainUserId },
+	// 			},
+	// 		);
+
+	// 		// If the API response indicates success
+	// 		if (apiResponse.data.status === "OK") {
+	// 			const userDocRef = doc(db, "users", userId);
+	// 			const userDoc = await getDoc(userDocRef);
+
+	// 			if (userDoc.exists()) {
+	// 				const activatedNumbers = userDoc.data().activatedNumbers || {};
+
+	// 				// Update only the numbers associated with the specific domainUserId
+	// 				const updatedNumbers = {};
+
+	// 				for (let simNumber in activatedNumbers) {
+	// 					updatedNumbers[simNumber] = {};
+	// 					for (let type in activatedNumbers[simNumber]) {
+	// 						updatedNumbers[simNumber][type] = activatedNumbers[simNumber][
+	// 							type
+	// 						].map((num) => {
+	// 							// Only deactivate numbers with the matching domainUserId
+	// 							if (num.domainUserId === domainUserId) {
+	// 								return { ...num, Activated: "Deactivated" };
+	// 							}
+	// 							return num;
+	// 						});
+	// 					}
+	// 				}
+
+	// 				// Update the Firestore document with the new status
+	// 				await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
+	// 				setLoadingStates((prevState) => ({
+	// 					...prevState,
+	// 					[index]: false,
+	// 				}));
+	// 				toast.success("User is Terminated Successfully");
+	// 				// Optionally, refresh the UI or data
+	// 				getallUsersData();
+	// 			}
+	// 		} else {
+	// 			setLoadingStates((prevState) => ({
+	// 				...prevState,
+	// 				[index]: false,
+	// 			}));
+	// 			console.error("API response error:", apiResponse.data);
+	// 			toast.error("Failed to terminate the user.");
+	// 		}
+	// 	} catch (error) {
+	// 		setLoadingStates((prevState) => ({
+	// 			...prevState,
+	// 			[index]: false,
+	// 		}));
+	// 		console.error("Error terminating user:", error.message);
+	// 		toast.error(error.message);
+	// 	}
+	// };
+	const terminateUser = async (domainUserId, userId, index) => {
 		try {
 			setLoadingStates((prevState) => ({
 				...prevState,
 				[index]: true,
 			}));
-			// Make the API request to terminate the user using their domain user ID
-			const apiResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
+
+			// Make the API request to the backend endpoint
+			const response = await axios.post(
+				"http://localhost:3000/terminate-user",
 				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
-					},
-					func_name: "prov_terminate_user",
-					data: { domain_user_id: domainUserId },
+					domainUserId,
+					userId,
+					authId,
+					hash,
+					authAccount,
 				},
 			);
 
-			// If the API response indicates success
-			if (apiResponse.data.status === "OK") {
-				const userDocRef = doc(db, "users", userId);
-				const userDoc = await getDoc(userDocRef);
-
-				if (userDoc.exists()) {
-					const activatedNumbers = userDoc.data().activatedNumbers || {};
-
-					// Update only the numbers associated with the specific domainUserId
-					const updatedNumbers = {};
-
-					for (let simNumber in activatedNumbers) {
-						updatedNumbers[simNumber] = {};
-						for (let type in activatedNumbers[simNumber]) {
-							updatedNumbers[simNumber][type] = activatedNumbers[simNumber][
-								type
-							].map((num) => {
-								// Only deactivate numbers with the matching domainUserId
-								if (num.domainUserId === domainUserId) {
-									return { ...num, Activated: "Deactivated" };
-								}
-								return num;
-							});
-						}
-					}
-
-					// Update the Firestore document with the new status
-					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
-					setLoadingStates((prevState) => ({
-						...prevState,
-						[index]: false,
-					}));
-					toast.success("User is Terminated Successfully");
-					// Optionally, refresh the UI or data
-					getallUsersData();
-				}
+			if (response.data.status === "Success") {
+				setLoadingStates((prevState) => ({
+					...prevState,
+					[index]: false,
+				}));
+				toast.success(response.data.message);
+				getallUsersData(); // Optionally, refresh the UI or data
 			} else {
 				setLoadingStates((prevState) => ({
 					...prevState,
 					[index]: false,
 				}));
-				console.error("API response error:", apiResponse.data);
-				toast.error("Failed to terminate the user.");
+				console.error("API response error:", response.data);
+				toast.error(response.data.message);
 			}
 		} catch (error) {
 			setLoadingStates((prevState) => ({
@@ -771,11 +814,17 @@ const AllUsersTable = () => {
 											<button
 												type="button"
 												onClick={() => {
-													terminateUser(data?.domainUserId, data?.userId, index);
+													terminateUser(
+														data?.domainUserId,
+														data?.userId,
+														index,
+													);
 												}}
 												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
 											>
-												{loadingStates[index] ? "Terminating" : "Terminate User"}
+												{loadingStates[index]
+													? "Terminating"
+													: "Terminate User"}
 											</button>
 										</td>
 									</tr>

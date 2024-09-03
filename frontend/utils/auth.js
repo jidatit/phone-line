@@ -1,10 +1,10 @@
 import CryptoJS from "crypto-js";
 
-const brandToken = "da2ab7d7-810a-41b2-be51-6547d6fdc841";
-const accountToken = "36dd8a38-f12d-4fc0-8a7e-e019f724b5bb";
-const authId = 400004327;
-const accountId = 400000476;
-const packageId = 400000234;
+const brandToken = import.meta.env.VITE_BRAND_TOKEN;
+const accountToken = import.meta.env.VITE_ACCOUNT_TOKEN;
+const authId = import.meta.env.VITE_AUTH_ID;
+const accountId = import.meta.env.VITE_ACCOUNT_ID;
+const packageId = import.meta.env.VITE_PACKAGE_ID;
 
 const hash = Math.floor(Date.now() / 1000).toString();
 
