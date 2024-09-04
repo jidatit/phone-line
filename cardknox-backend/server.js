@@ -3,9 +3,10 @@ const axios = require("axios");
 const cors = require("cors");
 const admin = require("firebase-admin"); // For Firebase integration
 const app = express();
+const cron = require("node-cron");
 require("dotenv").config();
 app.use(express.json());
-
+const { hash, authAccount, authId } = require("./utils/auth");
 const serviceAccount = {
 	type: "service_account",
 	project_id: process.env.project_id,
@@ -125,8 +126,12 @@ app.post("/activate-sim", async (req, res) => {
 				// const convertedStartDate = startDate ? startDate.toDate() : null;
 				// const convertedEndDate = endDate ? endDate.toDate() : null;
 
-				const convertedStartDate = startDate ? new Date(startDate) : null;
-				const convertedEndDate = endDate ? new Date(endDate) : null;
+				const convertedStartDate = startDate
+					? admin.firestore.Timestamp.fromDate(new Date(startDate))
+					: null;
+				const convertedEndDate = endDate
+					? admin.firestore.Timestamp.fromDate(new Date(endDate))
+					: null;
 				// Mapping over notes to create the numbers array with all required data
 				responseDetails.step2.numbers = notes.map((note) => {
 					const [country, number] = note.split(" הופעל הוא ");
@@ -326,6 +331,84 @@ app.post("/terminate-user", async (req, res) => {
 		res.status(500).json({ status: "Failed", message: error.message });
 	}
 });
+const checkExpiredUsers = async () => {
+	try {
+		const now = new Date();
+		const utcNow = new Date(
+			now.getUTCFullYear(),
+			now.getUTCMonth(),
+			now.getUTCDate(),
+			now.getUTCHours(),
+			now.getUTCMinutes(),
+			now.getUTCSeconds(),
+		);
+
+		// Query to get only those users whose expiry date is less than or equal to now
+		const usersSnapshot = await admin
+			.firestore()
+			.collection("users")
+			.where("expiryDate", "<=", utcNow) // Adjusted query
+			.get();
+		console.log("utc now,", utcNow);
+		console.log("now", now);
+		if (usersSnapshot.empty) {
+			console.log("No expired users found.");
+			return;
+		}
+
+		usersSnapshot.forEach(async (doc) => {
+			const userData = doc.data();
+			const activatedNumbers = userData.activatedNumbers || {};
+
+			for (let simNumber in activatedNumbers) {
+				const types = activatedNumbers[simNumber];
+
+				for (const type in types) {
+					const numbers = types[type];
+
+					if (Array.isArray(numbers)) {
+						numbers.forEach(async (num) => {
+							const expiryDate = num.endDate.toDate(); // Firestore Timestamp to Date
+							const utcExpiryDate = new Date(expiryDate.toISOString()); // Normalize to UTC
+
+							console.log("Expiry UTC:", utcExpiryDate, "Current UTC:", utcNow);
+
+							if (utcExpiryDate <= utcNow) {
+								// Call terminateUser function
+								console.log("Terminated user:", num.domainUserId);
+							}
+						});
+					} else if (numbers && typeof numbers === "object") {
+						const expiryDate = numbers.endDate
+							? numbers.endDate.toDate()
+							: null;
+
+						if (expiryDate) {
+							const utcExpiryDate = new Date(expiryDate.toISOString()); // Normalize to UTC
+
+							if (utcExpiryDate <= utcNow) {
+								// Call terminateUser function
+								console.log("Terminated user:", numbers.domainUserId);
+							}
+						}
+					} else {
+						console.error(
+							`Expected an array or object for activatedNumbers[${simNumber}][${type}], but found:`,
+							numbers,
+						);
+					}
+				}
+			}
+		});
+	} catch (error) {
+		console.error("Error checking expired users:", error.message);
+	}
+};
+
+// cron.schedule("*/30 * * * * *", () => {
+// 	console.log("Running the cron job to check expired users every 30 seconds");
+// 	checkExpiredUsers();
+// });
 
 app.post("/process-payment", async (req, res) => {
 	const paymentDetails = req.body;

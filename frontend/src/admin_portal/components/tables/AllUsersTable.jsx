@@ -451,7 +451,11 @@ const AllUsersTable = () => {
 	// 		toast.error(error.message);
 	// 	}
 	// };
-	const terminateUser = async (domainUserId, userId, index) => {
+	const terminateUser = async (domainUserId, userId, index, activated) => {
+		if (activated === "Deactivated") {
+			toast.error("User is Already terminated");
+			return;
+		}
 		try {
 			setLoadingStates((prevState) => ({
 				...prevState,
@@ -498,6 +502,23 @@ const AllUsersTable = () => {
 	useEffect(() => {
 		applyFilters();
 	}, [filters, allUsersData]);
+	// useEffect(() => {
+	// 	const checkExpirationDates = () => {
+	// 		rowsToShow.forEach((data, index) => {
+	// 			console.log("data", data);
+	// 			// Perform your expiration check logic here
+	// 		});
+	// 	};
+
+	// 	// Run the check immediately on component mount
+	// 	checkExpirationDates();
+
+	// 	// Set up the interval to run every 30 seconds (30000 milliseconds)
+	// 	const intervalId = setInterval(checkExpirationDates, 30000);
+
+	// 	// Clear the interval on component unmount
+	// 	return () => clearInterval(intervalId);
+	// }, []);
 
 	return (
 		<>
@@ -815,6 +836,7 @@ const AllUsersTable = () => {
 														data?.domainUserId,
 														data?.userId,
 														index,
+														data?.activated,
 													);
 												}}
 												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"

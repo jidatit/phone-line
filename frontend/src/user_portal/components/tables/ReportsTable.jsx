@@ -15,7 +15,9 @@ import { Link, Navigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
-
+import { toast, ToastContainer } from "react-toastify";
+import { hash, authAccount, authId } from "../../../../utils/auth";
+import axios from "axios";
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -39,6 +41,7 @@ const ReportsTable = () => {
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
 	const [loading, setLoading] = useState(false);
+	const [loadingStates, setLoadingStates] = useState({});
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -264,6 +267,73 @@ const ReportsTable = () => {
 			sortOrder: event.target.value,
 		}));
 	};
+	const terminateUser = async (domainUserId, userId, index, activated) => {
+		if (activated === "Deactivated") {
+			toast.error("User is Already terminated");
+			return;
+		}
+		try {
+			setLoadingStates((prevState) => ({
+				...prevState,
+				[index]: true,
+			}));
+
+			// Make the API request to the backend endpoint
+			const response = await axios.post(
+				"http://localhost:3000/terminate-user",
+				{
+					domainUserId,
+					userId,
+					authId,
+					hash,
+					authAccount,
+				},
+			);
+
+			if (response.data.status === "Success") {
+				setLoadingStates((prevState) => ({
+					...prevState,
+					[index]: false,
+				}));
+				toast.success(response.data.message);
+				getNumbersData();
+			} else {
+				setLoadingStates((prevState) => ({
+					...prevState,
+					[index]: false,
+				}));
+				console.error("API response error:", response.data);
+				toast.error(response.data.message);
+			}
+		} catch (error) {
+			setLoadingStates((prevState) => ({
+				...prevState,
+				[index]: false,
+			}));
+			console.error("Error terminating user:", error.message);
+			toast.error(error.message);
+		}
+	};
+	// useEffect(() => {
+	// 	const checkExpirationDates = () => {
+	// 		rowsToShow.forEach((data, index) => {
+	// 			console.log("data", data);
+	// 			if (new Date(data.expireDate) <= new Date()) {
+	// 				terminateUser(data?.domainUserId, data?.userId, index);
+	// 				toast.info(`Date is expired ${data?.simNumber} is terminated `);
+	// 			}
+	// 		});
+	// 	};
+
+	// 	// Run the check immediately on component mount
+	// 	checkExpirationDates();
+
+	// 	// Set up the interval to run every 5 minutes (300000 milliseconds)
+	// 	const intervalId = setInterval(checkExpirationDates, 30000);
+
+	// 	// Clear the interval on component unmount
+	// 	return () => clearInterval(intervalId);
+	// }, []);
 
 	useEffect(() => {
 		applyFilters();
