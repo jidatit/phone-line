@@ -20,7 +20,7 @@ import dayjs from "dayjs"; // Import dayjs or any other date formatting library
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import { hash, authAccount, authId } from "../../../../utils/auth";
-
+import utc from "dayjs/plugin/utc";
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -43,6 +43,7 @@ const styleLogout = {
 };
 
 const AllUsersTable = () => {
+	dayjs.extend(utc);
 	const [allUsersData, setAllUsersData] = useState([]);
 	const [filteredallUsersData, setFilteredallUsersData] = useState([]);
 	const [showOrHideFilters, setShowOrHideFilters] = useState(false);
@@ -142,11 +143,20 @@ const AllUsersTable = () => {
 							// Ensure `numbers` is an array before mapping
 							if (Array.isArray(numbers)) {
 								return numbers.map((numberInfo) => {
+									// Handle different date formats for startDate and endDate
 									const purchaseDate = numberInfo.startDate
-										? dayjs(numberInfo.startDate.toDate()).format("DD/MM/YYYY")
+										? dayjs(
+												numberInfo.startDate.toDate
+													? numberInfo.startDate.toDate()
+													: numberInfo.startDate,
+											).format("DD/MM/YYYY")
 										: "N/A";
 									const expireDate = numberInfo.endDate
-										? dayjs(numberInfo.endDate.toDate()).format("DD/MM/YYYY")
+										? dayjs(
+												numberInfo.endDate.toDate
+													? numberInfo.endDate.toDate()
+													: numberInfo.endDate,
+											).format("DD/MM/YYYY")
 										: "N/A";
 
 									return {
@@ -172,7 +182,7 @@ const AllUsersTable = () => {
 			});
 
 			setAllUsersData(usersData);
-			//console.log("all user", usersData); // Log the updated `usersData`
+			// console.log("all user", usersData); // Log the updated `usersData`
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
 			toast.error("Error fetching users data");

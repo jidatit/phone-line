@@ -17,6 +17,7 @@ import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
 import { toast, ToastContainer } from "react-toastify";
 import { hash, authAccount, authId } from "../../../../utils/auth";
+import { Timestamp } from "firebase/firestore";
 import axios from "axios";
 const style = {
 	position: "absolute",
@@ -135,21 +136,27 @@ const ReportsTable = () => {
 						// Ensure numbers is an array before using forEach
 						if (Array.isArray(numbers)) {
 							numbers.forEach((num) => {
+								// Check if num.startDate and num.endDate are Firestore Timestamps
+								const purchaseDate =
+									num.startDate instanceof Timestamp
+										? num.startDate.toDate().toLocaleDateString()
+										: new Date(num.startDate).toLocaleDateString();
+
+								const expireDate =
+									num.endDate instanceof Timestamp
+										? num.endDate.toDate().toLocaleDateString()
+										: new Date(num.endDate).toLocaleDateString();
+
 								numbersData.push({
 									number: num.number,
 									simNumber: simNumber, // Include the simNumber in the output
 									country: country, // Include the country (IL or US) in the output
-									purchaseDate: num.startDate
-										? num.startDate.toDate().toLocaleDateString()
-										: "",
-									expireDate: num.endDate
-										? num.endDate.toDate().toLocaleDateString()
-										: "",
+									purchaseDate: purchaseDate,
+									expireDate: expireDate,
 									status: num.Activated,
 								});
 							});
 						} else {
-							// console.log("num", numbersData);
 							// Handle cases where numbers is not an array (optional)
 						}
 					}

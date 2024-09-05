@@ -11,6 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../../../AuthContext";
 import { db } from "../../../Firebase";
+import dayjs from "dayjs";
 import {
 	hash,
 	authAccount,
@@ -18,8 +19,10 @@ import {
 	packageId,
 	accountId,
 } from "../../../utils/auth";
+import utc from "dayjs/plugin/utc";
 import Loader from "../../../utils/Loader";
 const ActivateLine = () => {
+	dayjs.extend(utc);
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(null);
 	const [endDate, setEndDate] = useState(null);
@@ -348,8 +351,37 @@ const ActivateLine = () => {
 
 	const handleConfirmDates = async () => {
 		if (startDate && endDate) {
-			console.log("Start Date: ", startDate.format("YYYY-MM-DD"));
-			console.log("End Date: ", endDate.format("YYYY-MM-DD"));
+			// Get current time
+			const currentTime = dayjs();
+
+			// Add current time to startDate and endDate
+			const startDateTime = startDate
+				.hour(currentTime.hour())
+				.minute(currentTime.minute())
+				.second(currentTime.second());
+			const endDateTime = endDate
+				.hour(currentTime.hour())
+				.minute(currentTime.minute())
+				.second(currentTime.second());
+			// const startDateTimeUtc = dayjs(startDateTime).utc(); // Convert to UTC
+			// const endDateTimeUtc = dayjs(endDateTime).utc(); // Convert to UTC
+			const startDateTimeUtc = startDateTime.utc();
+			const endDateTimeUtc = endDateTime.utc();
+
+			setStartDate(startDateTimeUtc);
+			setEndDate(endDateTimeUtc);
+			// Log the date and time
+			console.log("Start Date and Tim in UTC: ", startDateTimeUtc);
+			console.log("End Date and Time IN utc: ", endDateTimeUtc);
+			console.log(
+				"Start Date and Time: ",
+				startDateTime.format("YYYY-MM-DD HH:mm:ss"),
+			);
+			console.log(
+				"End Date and Time: ",
+				endDateTime.format("YYYY-MM-DD HH:mm:ss"),
+			);
+
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
@@ -365,6 +397,7 @@ const ActivateLine = () => {
 			toast.error("Please select both start and end dates");
 		}
 	};
+
 	if (loading) {
 		return <Loader />;
 	}

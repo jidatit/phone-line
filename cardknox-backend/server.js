@@ -4,6 +4,9 @@ const cors = require("cors");
 const admin = require("firebase-admin"); // For Firebase integration
 const app = express();
 const cron = require("node-cron");
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+dayjs.extend(utc);
 require("dotenv").config();
 app.use(express.json());
 const { hash, authAccount, authId } = require("./utils/auth");
@@ -125,13 +128,19 @@ app.post("/activate-sim", async (req, res) => {
 				// Convert dayjs objects to JavaScript Date objects
 				// const convertedStartDate = startDate ? startDate.toDate() : null;
 				// const convertedEndDate = endDate ? endDate.toDate() : null;
-
+				console.log("without converted date", startDate, " ", endDate);
 				const convertedStartDate = startDate
 					? admin.firestore.Timestamp.fromDate(new Date(startDate))
 					: null;
 				const convertedEndDate = endDate
 					? admin.firestore.Timestamp.fromDate(new Date(endDate))
 					: null;
+				console.log(
+					"converted date",
+					convertedStartDate,
+					" ",
+					convertedEndDate,
+				);
 				// Mapping over notes to create the numbers array with all required data
 				responseDetails.step2.numbers = notes.map((note) => {
 					const [country, number] = note.split(" הופעל הוא ");
@@ -143,8 +152,8 @@ app.post("/activate-sim", async (req, res) => {
 						endpointId, // Storing endpoint ID
 						msisdn, // Storing MSISDN
 						modify: false,
-						startDate: convertedStartDate,
-						endDate: convertedEndDate,
+						startDate: startDate,
+						endDate: endDate,
 						simNumber, // Storing the entered SIM number
 						Activated: "Activated",
 						domainUserId: domainUserId, // Storing the domain user ID
@@ -238,12 +247,12 @@ app.post("/activate-sim", async (req, res) => {
 				[simNumber]: {
 					IL: groupedNumbers.IL || [],
 					US: groupedNumbers.US || [],
-					startDate: startDate
-						? admin.firestore.Timestamp.fromDate(new Date(startDate))
-						: null,
-					endDate: endDate
-						? admin.firestore.Timestamp.fromDate(new Date(endDate))
-						: null,
+					// startDate: startDate
+					// 	? admin.firestore.Timestamp.fromDate(new Date(startDate))
+					// 	: null,
+					// endDate: endDate
+					// 	? admin.firestore.Timestamp.fromDate(new Date(endDate))
+					// 	: null,
 				},
 			};
 
@@ -331,64 +340,78 @@ app.post("/terminate-user", async (req, res) => {
 		res.status(500).json({ status: "Failed", message: error.message });
 	}
 });
+dayjs.extend(utc);
+
 const checkExpiredUsers = async () => {
 	try {
-		const now = new Date();
-		const utcNow = new Date(
-			now.getUTCFullYear(),
-			now.getUTCMonth(),
-			now.getUTCDate(),
-			now.getUTCHours(),
-			now.getUTCMinutes(),
-			now.getUTCSeconds(),
-		);
+		// Get the current time in UTC using dayjs
+		const utcNow = dayjs().utc();
 
-		// Query to get only those users whose expiry date is less than or equal to now
-		const usersSnapshot = await admin
-			.firestore()
-			.collection("users")
-			.where("expiryDate", "<=", utcNow) // Adjusted query
-			.get();
-		console.log("utc now,", utcNow);
-		console.log("now", now);
+		// Convert dayjs UTC time to Firestore Timestamp
+		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
+
+		// Query to get all users from Firestore
+		const usersSnapshot = await admin.firestore().collection("users").get();
+
 		if (usersSnapshot.empty) {
-			console.log("No expired users found.");
+			console.log("No users found.");
 			return;
 		}
 
-		usersSnapshot.forEach(async (doc) => {
-			const userData = doc.data();
+		// Iterate over each user document
+		usersSnapshot.forEach(async (userDoc) => {
+			const userData = userDoc.data();
 			const activatedNumbers = userData.activatedNumbers || {};
 
-			for (let simNumber in activatedNumbers) {
-				const types = activatedNumbers[simNumber];
-
-				for (const type in types) {
-					const numbers = types[type];
-
+			// Iterate through activatedNumbers
+			for (const [simNumber, numbersByType] of Object.entries(
+				activatedNumbers,
+			)) {
+				for (const [type, numbers] of Object.entries(numbersByType)) {
 					if (Array.isArray(numbers)) {
 						numbers.forEach(async (num) => {
-							const expiryDate = num.endDate.toDate(); // Firestore Timestamp to Date
-							const utcExpiryDate = new Date(expiryDate.toISOString()); // Normalize to UTC
+							if (num.endDate) {
+								// Convert Firestore Timestamp to dayjs UTC date
+								const utcExpiryDate = dayjs(num.endDate).utc();
+								console.log("Number ", num?.domainUserId);
 
-							console.log("Expiry UTC:", utcExpiryDate, "Current UTC:", utcNow);
+								console.log(
+									"Expiry UTC:",
+									utcExpiryDate.format(),
+									"Current UTC:",
+									utcNow.format(),
+								);
 
-							if (utcExpiryDate <= utcNow) {
-								// Call terminateUser function
-								console.log("Terminated user:", num.domainUserId);
+								// Check if the expiry date is before or equal to the current UTC time
+								if (
+									utcExpiryDate.isBefore(utcNow) ||
+									utcExpiryDate.isSame(utcNow)
+								) {
+									// Call terminateUser function
+									console.log("Terminated user:", num.domainUserId);
+									// Add your API call here
+								}
 							}
 						});
 					} else if (numbers && typeof numbers === "object") {
-						const expiryDate = numbers.endDate
-							? numbers.endDate.toDate()
-							: null;
+						if (numbers.endDate) {
+							// Convert Firestore Timestamp to dayjs UTC date
+							const utcExpiryDate = dayjs(numbers.endDate).utc();
 
-						if (expiryDate) {
-							const utcExpiryDate = new Date(expiryDate.toISOString()); // Normalize to UTC
+							console.log(
+								"Expiry UTC:",
+								utcExpiryDate.format(),
+								"Current UTC:",
+								utcNow.format(),
+							);
 
-							if (utcExpiryDate <= utcNow) {
+							if (
+								utcExpiryDate.isBefore(utcNow) ||
+								utcExpiryDate.isSame(utcNow)
+							) {
 								// Call terminateUser function
 								console.log("Terminated user:", numbers.domainUserId);
+								// Add your API call here
 							}
 						}
 					} else {
