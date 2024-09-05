@@ -1,6 +1,6 @@
 export const processPayment = async (paymentDetails) => {
 	try {
-		const response = await fetch("http://localhost:3000/process-payment", {
+		const response = await fetch("https://phone-line-backend.onrender.com/process-payment", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

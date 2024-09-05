@@ -282,7 +282,7 @@ const ActivateLine = () => {
 		try {
 			setLoading(true);
 
-			const response = await axios.post("http://localhost:3000/activate-sim", {
+			const response = await axios.post("https://phone-line-backend.onrender.com/activate-sim", {
 				authId,
 				hash,
 				authAccount,

@@ -287,7 +287,7 @@ const ReportsTable = () => {
 
 			// Make the API request to the backend endpoint
 			const response = await axios.post(
-				"http://localhost:3000/terminate-user",
+				"https://phone-line-backend.onrender.com/terminate-user",
 				{
 					domainUserId,
 					userId,
