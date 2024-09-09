@@ -7,6 +7,10 @@ import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import PaymentModal from "../PaymentModal";
+import { doc, getDoc } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore"; // Ensure Timestamp is imported if used
+import { db } from "../../../../Firebase";
+import { useAuth } from "../../../../AuthContext";
 
 const style = {
 	position: "absolute",
@@ -28,6 +32,8 @@ const ReportsTable = () => {
 	const [rowPerPage, setRowPerPage] = useState(10);
 	const [rowsToShow, setRowsToShow] = useState([]);
 	const [currentPage, setCurrentPage] = useState(0);
+	const { currentUser } = useAuth();
+	const userId = currentUser?.uid;
 
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -49,7 +55,7 @@ const ReportsTable = () => {
 	};
 
 	useEffect(() => {
-		getnumbersData();
+		getNumbersData();
 	}, []);
 
 	useEffect(() => {
@@ -98,48 +104,93 @@ const ReportsTable = () => {
 		return paginationLinks;
 	};
 
-	const getnumbersData = async () => {
-		const dummyData = [
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				currentBalance: 300,
-				status: "Activated",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				currentBalance: 340,
-				status: "Pending",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				currentBalance: 426,
-				status: "Pending",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				currentBalance: 120,
-				status: "Activated",
-			},
-			{
-				number: "+12363758568",
-				purchaseDate: "12/06/2022",
-				expireDate: "06/08/2023",
-				currentBalance: 180,
-				status: "Pending",
-			},
-		];
+	const getNumbersData = async () => {
 		try {
-			setNumbersData(dummyData);
+			// setLoading(true);
+			// Fetch user document from Firestore
+			const userDocRef = doc(db, "users", userId);
+			const userDoc = await getDoc(userDocRef);
+
+			if (userDoc.exists()) {
+				// Get the activatedNumbers from the document
+				const activatedNumbers = userDoc.data().activatedNumbers || {};
+
+				// Transform the data to match the structure of numbersData
+				const numbersData = [];
+
+				// Use a Map to store unique entries by simNumber
+				const uniqueNumbers = new Map();
+
+				// Iterate over each simNumber key in activatedNumbers
+				for (const [simNumber, detailsByCountry] of Object.entries(
+					activatedNumbers,
+				)) {
+					// Iterate over each country (IL, US) and its details
+					for (const [country, detailsArray] of Object.entries(
+						detailsByCountry,
+					)) {
+						// Ensure detailsArray is an array before processing
+						if (Array.isArray(detailsArray)) {
+							// biome-ignore lint/complexity/noForEach: <explanation>
+							detailsArray.forEach((details) => {
+								// Extract necessary details
+								const {
+									number,
+									startDate,
+									endDate,
+									Activated: status,
+								} = details;
+
+								// Check if startDate and endDate are Firestore Timestamps
+								const purchaseDate =
+									startDate instanceof Timestamp
+										? startDate.toDate().toLocaleDateString()
+										: new Date(startDate).toLocaleDateString();
+
+								const expireDate =
+									endDate instanceof Timestamp
+										? endDate.toDate().toLocaleDateString()
+										: new Date(endDate).toLocaleDateString();
+
+								// Extract balance from activatedNumbers for the specific number
+								const balance = activatedNumbers[simNumber]?.balance || 0;
+
+								// Check if simNumber already exists in the Map
+								if (!uniqueNumbers.has(simNumber)) {
+									uniqueNumbers.set(simNumber, {
+										number: number,
+										simNumber: simNumber, // Include the simNumber in the output
+										purchaseDate: purchaseDate,
+										expireDate: expireDate,
+										status: status, // Status as "Activated" or "Pending"
+										currentBalance: balance,
+									});
+								} else {
+									// Optionally, update the existing entry if necessary
+									// For example, you might want to combine status or handle other fields
+								}
+							});
+						} else {
+							// Handle cases where detailsArray is not an array (optional)
+						}
+					}
+				}
+
+				// Convert the Map values to an array
+				const numbersDataArray = Array.from(uniqueNumbers.values());
+
+				// setLoading(false);
+				// Set the transformed data to state
+				setNumbersData(numbersDataArray);
+			} else {
+				// setLoading(false);
+				console.log("No such document!");
+				setNumbersData([]); // Set empty data if no document found
+			}
 		} catch (error) {
-			console.error("Error fetching leads modules : ", error);
+			// setLoading(false);
+			console.error("Error fetching activated numbers: ", error);
+			setNumbersData([]); // Set empty data in case of error
 		}
 	};
 
@@ -356,10 +407,10 @@ const ReportsTable = () => {
 															: "border-t"
 												} whitespace-nowrap`}
 											>
-												{!data?.number ? (
+												{!data?.simNumber ? (
 													<div> - </div>
 												) : (
-													<div>{data.number}</div>
+													<div>{data.simNumber}</div>
 												)}
 											</td>
 											<td

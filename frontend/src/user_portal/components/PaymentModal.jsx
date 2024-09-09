@@ -4,6 +4,9 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { processPayment } from "./PaymentService"; // Adjust the import path as necessary
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../../Firebase";
+import { useAuth } from "../../../AuthContext";
 
 const schema = z.object({
 	simNumber: z.string().min(1, "Sim Number is required"),
@@ -23,6 +26,8 @@ const schema = z.object({
 });
 
 const PaymentModal = ({ open, handleClose }) => {
+	const { currentUser } = useAuth();
+	const userId = currentUser?.uid;
 	const {
 		register,
 		handleSubmit,
@@ -43,9 +48,57 @@ const PaymentModal = ({ open, handleClose }) => {
 			const paymentResponse = await processPayment(formData);
 			console.log("Payment Response", paymentResponse);
 
-			// Handle success, e.g., show a success message or close the modal
-			handleClose();
-			alert("Payment successful!");
+			// Check if the payment was approved
+			if (paymentResponse.xStatus !== "Approved") {
+				const { amount } = formData;
+				const { simNumber } = formData;
+
+				// Fetch the user document
+				const userDocRef = doc(db, "users", userId);
+				const userDoc = await getDoc(userDocRef);
+
+				if (userDoc.exists()) {
+					const activatedNumbers = userDoc.data().activatedNumbers || {};
+
+					// Iterate over each simNumber in activatedNumbers
+					for (const [key, value] of Object.entries(activatedNumbers)) {
+						if (key === simNumber) {
+							// Update the balance
+							const updatedBalance =
+								(Number.parseFloat(value.balance) || 0) + amount;
+
+							// Update the corresponding balance inside the Firestore document
+							const updatedActivatedNumbers = {
+								...activatedNumbers,
+								[key]: {
+									...value,
+									balance: updatedBalance,
+								},
+							};
+
+							// Write the updated activatedNumbers back to Firestore
+							await updateDoc(userDocRef, {
+								activatedNumbers: updatedActivatedNumbers,
+							});
+
+							console.log(
+								"Balance updated successfully for simNumber:",
+								simNumber,
+							);
+							break;
+						}
+					}
+				} else {
+					console.error("No such document!");
+				}
+
+				// Handle success, e.g., show a success message or close the modal
+				handleClose();
+				alert("Payment successful!");
+			} else {
+				// Handle failed payment scenario
+				alert("Payment not approved. Please try again.");
+			}
 		} catch (error) {
 			// Handle errors, e.g., show an error message
 			console.error("Payment processing failed", error);

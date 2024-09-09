@@ -32,7 +32,7 @@ admin.initializeApp({
 // Enable CORS for your frontend (adjust the origin as needed)
 app.use(
 	cors({
-		origin: "http://localhost:5173",
+		origin: "https://bestphonerental.com",
 	}),
 );
 const db = admin.firestore();
@@ -247,12 +247,7 @@ app.post("/activate-sim", async (req, res) => {
 				[simNumber]: {
 					IL: groupedNumbers.IL || [],
 					US: groupedNumbers.US || [],
-					// startDate: startDate
-					// 	? admin.firestore.Timestamp.fromDate(new Date(startDate))
-					// 	: null,
-					// endDate: endDate
-					// 	? admin.firestore.Timestamp.fromDate(new Date(endDate))
-					// 	: null,
+					balance: 0,
 				},
 			};
 
@@ -359,7 +354,9 @@ const checkExpiredUsers = async () => {
 		}
 
 		// Iterate over each user document
+		// biome-ignore lint/complexity/noForEach: <explanation>
 		usersSnapshot.forEach(async (userDoc) => {
+			const userId = userDoc.id;
 			const userData = userDoc.data();
 			const activatedNumbers = userData.activatedNumbers || {};
 
@@ -369,6 +366,7 @@ const checkExpiredUsers = async () => {
 			)) {
 				for (const [type, numbers] of Object.entries(numbersByType)) {
 					if (Array.isArray(numbers)) {
+						// biome-ignore lint/complexity/noForEach: <explanation>
 						numbers.forEach(async (num) => {
 							if (num.endDate) {
 								// Convert Firestore Timestamp to dayjs UTC date
@@ -389,6 +387,10 @@ const checkExpiredUsers = async () => {
 								) {
 									// Call terminateUser function
 									console.log("Terminated user:", num.domainUserId);
+									console.log("number", numbers);
+									console.log("userid", userId);
+									// await terminateUser(num.domainUserId, userId,authId, hash, authAccount);
+
 									// Add your API call here
 								}
 							}
@@ -411,14 +413,16 @@ const checkExpiredUsers = async () => {
 							) {
 								// Call terminateUser function
 								console.log("Terminated user:", numbers.domainUserId);
+								console.log("userid", userId);
+								// await terminateUser(num.domainUserId, userId,authId, hash, authAccount);
 								// Add your API call here
 							}
 						}
 					} else {
-						console.error(
-							`Expected an array or object for activatedNumbers[${simNumber}][${type}], but found:`,
-							numbers,
-						);
+						// console.error(
+						// 	`Expected an array or object for activatedNumbers[${simNumber}][${type}], but found:`,
+						// 	numbers,
+						// );
 					}
 				}
 			}
@@ -428,10 +432,10 @@ const checkExpiredUsers = async () => {
 	}
 };
 
-// cron.schedule("*/30 * * * * *", () => {
-// 	console.log("Running the cron job to check expired users every 30 seconds");
-// 	checkExpiredUsers();
-// });
+cron.schedule("*/30 * * * * *", () => {
+	console.log("Running the cron job to check expired users every 30 seconds");
+	// checkExpiredUsers();
+});
 
 app.post("/process-payment", async (req, res) => {
 	const paymentDetails = req.body;
@@ -449,7 +453,6 @@ app.post("/process-payment", async (req, res) => {
 		xName: paymentDetails.cardName,
 		xCustom01: paymentDetails.simNumber, // Custom fields as needed
 	};
-	console.log("request data", requestData);
 	try {
 		const response = await axios.post(
 			"https://x1.cardknox.com/gatewayjson",
