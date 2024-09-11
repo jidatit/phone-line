@@ -107,6 +107,7 @@ app.post("/activate-sim", async (req, res) => {
 				},
 			);
 			console.log("apiresp2", apiResponse.data);
+			console.log("resp activating sim", apiResponse);
 			if (apiResponse.data.error_code === 270) {
 				responseDetails.step2.status = "Failed";
 				responseDetails.step2.error = "sim card already taken";
