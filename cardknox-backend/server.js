@@ -70,7 +70,8 @@ app.post("/activate-sim", async (req, res) => {
 				},
 			);
 			const errorCode = userCreationResponse.data.error_code;
-			if (errorCode) {
+			console.log("errorCode", errorCode);
+			if (errorCode !== 200) {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step1.status = "Failed";
@@ -86,8 +87,9 @@ app.post("/activate-sim", async (req, res) => {
 			responseDetails.step1.status = "Success";
 			responseDetails.step1.domainUserId = userCreationResponse.data.data.id;
 		} catch (error) {
+			console.log("error");
 			const errorCode = userCreationResponse.data.error_code;
-			if (errorCode) {
+			if (errorCode !== 200) {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
@@ -127,7 +129,7 @@ app.post("/activate-sim", async (req, res) => {
 			console.log("resp activating sim", apiResponse);
 
 			const errorCode = apiResponse.data.error_code;
-			if (errorCode) {
+			if (errorCode !== 200) {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
@@ -189,7 +191,7 @@ app.post("/activate-sim", async (req, res) => {
 			}
 		} catch (error) {
 			const errorCode = apiResponse.data.error_code;
-			if (errorCode) {
+			if (errorCode !== 200) {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
@@ -254,7 +256,7 @@ app.post("/activate-sim", async (req, res) => {
 				}
 			} catch (error) {
 				const errorCode = apiResponse.data.error_code;
-				if (errorCode) {
+				if (errorCode !== 200) {
 					const errorMessage =
 						errorMessages[errorCode] || "Unknown error occurred";
 					responseDetails.step3.status = "Failed";
