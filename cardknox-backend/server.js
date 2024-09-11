@@ -37,6 +37,7 @@ app.use(
 );
 const db = admin.firestore();
 app.post("/activate-sim", async (req, res) => {
+	console.log("asbvcdbascd")
 	const {
 		authId,
 		hash,
