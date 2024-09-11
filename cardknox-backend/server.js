@@ -334,6 +334,13 @@ app.post("/terminate-user", async (req, res) => {
 				data: { domain_user_id: domainUserId },
 			},
 		);
+		const errorCode = apiResponse.data.error_code;
+
+		// Check for errors in API response
+		if (errorCode && errorCode !== 200) {
+			const errorMessage = errorMessages[errorCode] || "Unknown error occurred";
+			return res.status(400).json({ status: "Failed", message: errorMessage });
+		}
 
 		if (apiResponse.data.status === "OK") {
 			const userDocRef = admin.firestore().collection("users").doc(userId);
