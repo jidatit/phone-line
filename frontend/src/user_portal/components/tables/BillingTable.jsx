@@ -467,22 +467,23 @@ const ReportsTable = () => {
 															: "border-t"
 												} whitespace-nowrap`}
 											>
-												{data?.status && data?.status === "Activated" && (
+												{data?.Activated && data?.Activated === "Activated" && (
 													<div className="w-full flex flex-row justify-start items-center gap-2">
 														<FiberManualRecordIcon
 															sx={{ color: "#4CE13F", fontSize: 16 }}
 														/>
-														<h1> {data.status} </h1>
+														<h1> {data.Activated} </h1>
 													</div>
 												)}
-												{data?.status && data?.status === "Pending" && (
-													<div className="w-full flex flex-row justify-start items-center gap-2">
-														<FiberManualRecordIcon
-															sx={{ color: "#C70000", fontSize: 16 }}
-														/>
-														<h1> {data.status} </h1>
-													</div>
-												)}
+												{data?.Activated &&
+													data?.Activated === "Deactivated" && (
+														<div className="w-full flex flex-row justify-start items-center gap-2">
+															<FiberManualRecordIcon
+																sx={{ color: "#C70000", fontSize: 16 }}
+															/>
+															<h1> {data.Activated} </h1>
+														</div>
+													)}
 											</td>
 											<td
 												className={`py-2 px-3 text-base  font-normal ${
