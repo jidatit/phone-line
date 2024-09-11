@@ -354,7 +354,6 @@ const checkExpiredUsers = async () => {
 		}
 
 		// Iterate over each user document
-		// biome-ignore lint/complexity/noForEach: <explanation>
 		usersSnapshot.forEach(async (userDoc) => {
 			const userId = userDoc.id;
 			const userData = userDoc.data();
@@ -366,19 +365,14 @@ const checkExpiredUsers = async () => {
 			)) {
 				for (const [type, numbers] of Object.entries(numbersByType)) {
 					if (Array.isArray(numbers)) {
-						// biome-ignore lint/complexity/noForEach: <explanation>
 						numbers.forEach(async (num) => {
-							if (num.endDate) {
-								// Convert Firestore Timestamp to dayjs UTC date
-								const utcExpiryDate = dayjs(num.endDate).utc();
-								console.log("Number ", num?.domainUserId);
+							// Skip if the number is already deactivated
+							if (num.Activated === "Deactivated") {
+								return;
+							}
 
-								console.log(
-									"Expiry UTC:",
-									utcExpiryDate.format(),
-									"Current UTC:",
-									utcNow.format(),
-								);
+							if (num.endDate) {
+								const utcExpiryDate = dayjs(num.endDate).utc();
 
 								// Check if the expiry date is before or equal to the current UTC time
 								if (
@@ -386,43 +380,44 @@ const checkExpiredUsers = async () => {
 									utcExpiryDate.isSame(utcNow)
 								) {
 									// Call terminateUser function
-									console.log("Terminated user:", num.domainUserId);
-									console.log("number", numbers);
-									console.log("userid", userId);
-									// await terminateUser(num.domainUserId, userId,authId, hash, authAccount);
-
-									// Add your API call here
+									console.log("Terminating user:", num.domainUserId);
+									await terminateUser(
+										num.domainUserId,
+										userId,
+										authId,
+										hash,
+										authAccount,
+									);
 								}
 							}
 						});
 					} else if (numbers && typeof numbers === "object") {
-						if (numbers.endDate) {
-							// Convert Firestore Timestamp to dayjs UTC date
-							const utcExpiryDate = dayjs(numbers.endDate).utc();
+						// Check if the number is already deactivated
+						if (numbers.Activated === "Deactivated") {
+							return;
+						}
 
-							console.log(
-								"Expiry UTC:",
-								utcExpiryDate.format(),
-								"Current UTC:",
-								utcNow.format(),
-							);
+						if (numbers.endDate) {
+							const utcExpiryDate = dayjs(numbers.endDate).utc();
 
 							if (
 								utcExpiryDate.isBefore(utcNow) ||
 								utcExpiryDate.isSame(utcNow)
 							) {
 								// Call terminateUser function
-								console.log("Terminated user:", numbers.domainUserId);
-								console.log("userid", userId);
-								// await terminateUser(num.domainUserId, userId,authId, hash, authAccount);
-								// Add your API call here
+								console.log("Terminating user:", numbers.domainUserId);
+								await terminateUser(
+									numbers.domainUserId,
+									userId,
+									authId,
+									hash,
+									authAccount,
+								);
+
+								// Mark number as deactivated
+								// numbers.Activated = "Deactivated";
 							}
 						}
-					} else {
-						// console.error(
-						// 	`Expected an array or object for activatedNumbers[${simNumber}][${type}], but found:`,
-						// 	numbers,
-						// );
 					}
 				}
 			}
@@ -432,9 +427,9 @@ const checkExpiredUsers = async () => {
 	}
 };
 
-cron.schedule("*/30 * * * * *", () => {
-	console.log("Running the cron job to check expired users every 30 seconds");
-	// checkExpiredUsers();
+cron.schedule("0 * * * *", () => {
+	console.log("Running the cron job to check expired users every hour");
+	checkExpiredUsers();
 });
 
 app.post("/process-payment", async (req, res) => {
