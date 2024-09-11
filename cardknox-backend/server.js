@@ -10,6 +10,8 @@ dayjs.extend(utc);
 require("dotenv").config();
 app.use(express.json());
 const { hash, authAccount, authId } = require("./utils/auth");
+const { errorMessages } = require("./utils/errorMessages");
+
 const serviceAccount = {
 	type: "service_account",
 	project_id: process.env.project_id,
@@ -37,7 +39,6 @@ app.use(
 );
 const db = admin.firestore();
 app.post("/activate-sim", async (req, res) => {
-	console.log("asbvcdbascd")
 	const {
 		authId,
 		hash,
@@ -68,16 +69,31 @@ app.post("/activate-sim", async (req, res) => {
 					data: { account_id: accountId, name: simNumber },
 				},
 			);
-
-			if (userCreationResponse.data.status !== "OK") {
+			const errorCode = userCreationResponse.data.error_code;
+			if (errorCode) {
+				const errorMessage =
+					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step1.status = "Failed";
-				responseDetails.step1.error = "Failed to create user via API";
+				responseDetails.step1.error = errorMessage;
 				return res.json(responseDetails);
 			}
+			// if (userCreationResponse.data.status !== "OK") {
+			// 	responseDetails.step1.status = "Failed";
+			// 	responseDetails.step1.error = "Failed to create user via API";
+			// 	return res.json(responseDetails);
+			// }
 
 			responseDetails.step1.status = "Success";
 			responseDetails.step1.domainUserId = userCreationResponse.data.data.id;
 		} catch (error) {
+			const errorCode = userCreationResponse.data.error_code;
+			if (errorCode) {
+				const errorMessage =
+					errorMessages[errorCode] || "Unknown error occurred";
+				responseDetails.step2.status = "Failed";
+				responseDetails.step2.error = errorMessage;
+				return res.json(responseDetails);
+			}
 			console.log("error", error);
 			responseDetails.step1.status = "Failed";
 			responseDetails.step1.error = axios.isAxiosError(error)
@@ -109,16 +125,25 @@ app.post("/activate-sim", async (req, res) => {
 			);
 			console.log("apiresp2", apiResponse.data);
 			console.log("resp activating sim", apiResponse);
-			if (apiResponse.data.error_code === 270) {
+
+			const errorCode = apiResponse.data.error_code;
+			if (errorCode) {
+				const errorMessage =
+					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
-				responseDetails.step2.error = "sim card already taken";
+				responseDetails.step2.error = errorMessage;
 				return res.json(responseDetails);
 			}
-			if (apiResponse.data.status !== "OK") {
-				responseDetails.step2.status = "Failed";
-				responseDetails.step2.error = "Failed to activate SIM";
-				return res.json(responseDetails);
-			}
+			// if (apiResponse.data.error_code === 270) {
+			// 	responseDetails.step2.status = "Failed";
+			// 	responseDetails.step2.error = "sim card already taken";
+			// 	return res.json(responseDetails);
+			// }
+			// if (apiResponse.data.status !== "OK") {
+			// 	responseDetails.step2.status = "Failed";
+			// 	responseDetails.step2.error = "Failed to activate SIM";
+			// 	return res.json(responseDetails);
+			// }
 
 			responseDetails.step2.status = "Success";
 
@@ -163,6 +188,14 @@ app.post("/activate-sim", async (req, res) => {
 				});
 			}
 		} catch (error) {
+			const errorCode = apiResponse.data.error_code;
+			if (errorCode) {
+				const errorMessage =
+					errorMessages[errorCode] || "Unknown error occurred";
+				responseDetails.step2.status = "Failed";
+				responseDetails.step2.error = errorMessage;
+				return res.json(responseDetails);
+			}
 			console.log("error", error);
 			responseDetails.step2.status = "Failed";
 			responseDetails.step2.error = axios.isAxiosError(error)
@@ -208,10 +241,26 @@ app.post("/activate-sim", async (req, res) => {
 
 					// console.log("resp3", responseDetails.step2.numbers);
 				} else {
-					responseDetails.step3.status = "Failed";
-					responseDetails.step3.error = "Failed to modify caller ID";
+					const errorCode = apiResponse.data.error_code;
+					if (errorCode) {
+						const errorMessage =
+							errorMessages[errorCode] || "Unknown error occurred";
+						responseDetails.step3.status = "Failed";
+						responseDetails.step3.error = errorMessage;
+						return res.json(responseDetails);
+					}
+					// responseDetails.step3.status = "Failed";
+					// responseDetails.step3.error = "Failed to modify caller ID";
 				}
 			} catch (error) {
+				const errorCode = apiResponse.data.error_code;
+				if (errorCode) {
+					const errorMessage =
+						errorMessages[errorCode] || "Unknown error occurred";
+					responseDetails.step3.status = "Failed";
+					responseDetails.step3.error = errorMessage;
+					return res.json(responseDetails);
+				}
 				responseDetails.step3.status = "Failed";
 				responseDetails.step3.error = axios.isAxiosError(error)
 					? error.message
