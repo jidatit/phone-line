@@ -405,7 +405,7 @@ const terminateUser = async (
 	authAccount,
 ) => {
 	try {
-		await axios.post("http://localhost:3000/terminate-user", {
+		await axios.post("https://phone-line-backend.onrender.com/terminate-user", {
 			// Adjust URL if needed
 			domainUserId,
 			userId,
