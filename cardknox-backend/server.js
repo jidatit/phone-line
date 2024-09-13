@@ -50,7 +50,7 @@ app.post("/activate-sim", async (req, res) => {
 		endDate,
 		userId,
 	} = req.body;
-	// console.log("num", req.body);
+
 	let responseDetails = {
 		step1: { status: "", error: "", domainUserId: null },
 		step2: { status: "", error: "", numbers: [] },
@@ -70,7 +70,7 @@ app.post("/activate-sim", async (req, res) => {
 				},
 			);
 			const errorCode = userCreationResponse.data.error_code;
-			console.log("errorCode", errorCode);
+
 			if (errorCode !== 200) {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
@@ -87,7 +87,6 @@ app.post("/activate-sim", async (req, res) => {
 			responseDetails.step1.status = "Success";
 			responseDetails.step1.domainUserId = userCreationResponse.data.data.id;
 		} catch (error) {
-			console.log("error");
 			const errorCode = userCreationResponse.data.error_code;
 			if (errorCode !== 200) {
 				const errorMessage =
@@ -96,7 +95,7 @@ app.post("/activate-sim", async (req, res) => {
 				responseDetails.step2.error = errorMessage;
 				return res.json(responseDetails);
 			}
-			console.log("error", error);
+
 			responseDetails.step1.status = "Failed";
 			responseDetails.step1.error = axios.isAxiosError(error)
 				? error.message
@@ -125,8 +124,6 @@ app.post("/activate-sim", async (req, res) => {
 					},
 				},
 			);
-			console.log("apiresp2", apiResponse.data);
-			console.log("resp activating sim", apiResponse);
 
 			const errorCode = apiResponse.data.error_code;
 			if (errorCode !== 200) {
@@ -198,7 +195,7 @@ app.post("/activate-sim", async (req, res) => {
 				responseDetails.step2.error = errorMessage;
 				return res.json(responseDetails);
 			}
-			console.log("error", error);
+
 			responseDetails.step2.status = "Failed";
 			responseDetails.step2.error = axios.isAxiosError(error)
 				? error.message
