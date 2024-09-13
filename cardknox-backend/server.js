@@ -154,19 +154,19 @@ app.post("/activate-sim", async (req, res) => {
 				// Convert dayjs objects to JavaScript Date objects
 				// const convertedStartDate = startDate ? startDate.toDate() : null;
 				// const convertedEndDate = endDate ? endDate.toDate() : null;
-				console.log("without converted date", startDate, " ", endDate);
+				// console.log("without converted date", startDate, " ", endDate);
 				const convertedStartDate = startDate
 					? admin.firestore.Timestamp.fromDate(new Date(startDate))
 					: null;
 				const convertedEndDate = endDate
 					? admin.firestore.Timestamp.fromDate(new Date(endDate))
 					: null;
-				console.log(
-					"converted date",
-					convertedStartDate,
-					" ",
-					convertedEndDate,
-				);
+				// console.log(
+				// 	"converted date",
+				// 	convertedStartDate,
+				// 	" ",
+				// 	convertedEndDate,
+				// );
 				// Mapping over notes to create the numbers array with all required data
 				responseDetails.step2.numbers = notes.map((note) => {
 					const [country, number] = note.split(" הופעל הוא ");
@@ -453,9 +453,9 @@ const checkExpiredUsers = async () => {
 									utcExpiryDate.isBefore(utcNow) ||
 									utcExpiryDate.isSame(utcNow)
 								) {
-									console.log("utc expiry", utcExpiryDate);
-									console.log("utc now", utcNow);
-									console.log("Terminating user:", num.domainUserId);
+									// console.log("utc expiry", utcExpiryDate);
+									// console.log("utc now", utcNow);
+									// console.log("Terminating user:", num.domainUserId);
 									terminatePromises.push(
 										terminateUser(
 											num.domainUserId,
@@ -480,7 +480,7 @@ const checkExpiredUsers = async () => {
 								utcExpiryDate.isBefore(utcNow) ||
 								utcExpiryDate.isSame(utcNow)
 							) {
-								console.log("Terminating user:", numbers.domainUserId);
+								// console.log("Terminating user:", numbers.domainUserId);
 								terminatePromises.push(
 									terminateUser(
 										numbers.domainUserId,
@@ -504,8 +504,8 @@ const checkExpiredUsers = async () => {
 	}
 };
 
-cron.schedule("*/2 * * * *", () => {
-	console.log("Running the cron job to check expired users every 4 minutes");
+cron.schedule("0 * * * *", () => {
+	console.log("Running the cron job to check expired users every hour");
 	checkExpiredUsers();
 });
 

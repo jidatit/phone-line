@@ -41,12 +41,10 @@ const PaymentModal = ({ open, handleClose }) => {
 			...data,
 			amount: Number.parseFloat(data.amount),
 		};
-		console.log("Form Data", formData);
 
 		try {
 			// Call the processPayment function with the form data
 			const paymentResponse = await processPayment(formData);
-			console.log("Payment Response", paymentResponse);
 
 			// Check if the payment was approved
 			if (paymentResponse.xStatus === "Approved") {
