@@ -505,7 +505,7 @@ const checkExpiredUsers = async () => {
 	}
 };
 
-cron.schedule("*/30 * * * * *", () => {
+cron.schedule("*/240 * * * * *", () => {
 	console.log("Running the cron job to check expired users every hour");
 	checkExpiredUsers();
 });
