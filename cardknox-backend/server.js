@@ -416,40 +416,91 @@ const terminateUser = async (
 };
 const checkExpiredUsers = async () => {
 	try {
-		const usersSnapshot = await db.collection("users").get();
+		const utcNow = dayjs().utc();
+		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
 
-		usersSnapshot.forEach(async (userDoc) => {
-			const userData = userDoc.data();
+		// Query to get all users from Firestore
+		const usersSnapshot = await admin.firestore().collection("users").get();
+
+		if (usersSnapshot.empty) {
+			console.log("No users found.");
+			return;
+		}
+
+		const terminatePromises = []; // Array to hold promises
+
+		// Iterate over each user document
+		usersSnapshot.forEach((userDoc) => {
 			const userId = userDoc.id;
+			const userData = userDoc.data();
+			const activatedNumbers = userData.activatedNumbers || {};
 
-			// Check all activated numbers
-			if (userData.activatedNumbers) {
-				let hasExpired = false;
+			// Iterate through activatedNumbers
+			for (const [simNumber, numbersByType] of Object.entries(
+				activatedNumbers,
+			)) {
+				for (const [type, numbers] of Object.entries(numbersByType)) {
+					if (Array.isArray(numbers)) {
+						numbers.forEach((num) => {
+							if (num.Activated === "Deactivated") {
+								return;
+							}
 
-				for (const simNumber in userData.activatedNumbers) {
-					const numbers = userData.activatedNumbers[simNumber];
+							if (num.endDate) {
+								const utcExpiryDate = dayjs(num.endDate).utc();
 
-					numbers.IL.forEach(async (num) => {
-						if (num.endDate && dayjs(num.endDate.toDate()).isBefore(dayjs())) {
-							hasExpired = true;
-							await terminateUser(num.domainUserId, userId);
+								if (
+									utcExpiryDate.isBefore(utcNow) ||
+									utcExpiryDate.isSame(utcNow)
+								) {
+									console.log("utc expiry", utcExpiryDate);
+									console.log("utc now", utcNow);
+									console.log("Terminating user:", num.domainUserId);
+									terminatePromises.push(
+										terminateUser(
+											num.domainUserId,
+											userId,
+											authId,
+											hash,
+											authAccount,
+										),
+									);
+								}
+							}
+						});
+					} else if (numbers && typeof numbers === "object") {
+						if (numbers.Activated === "Deactivated") {
+							return;
 						}
-					});
-				}
 
-				// If any number has expired, update Firestore
-				if (hasExpired) {
-					console.log(
-						`User ${userId} has expired numbers, marking as expired.`,
-					);
-					await db.collection("users").doc(userId).update({
-						status: "expired",
-					});
+						if (numbers.endDate) {
+							const utcExpiryDate = dayjs(numbers.endDate).utc();
+
+							if (
+								utcExpiryDate.isBefore(utcNow) ||
+								utcExpiryDate.isSame(utcNow)
+							) {
+								console.log("Terminating user:", numbers.domainUserId);
+								terminatePromises.push(
+									terminateUser(
+										numbers.domainUserId,
+										userId,
+										authId,
+										hash,
+										authAccount,
+									),
+								);
+							}
+						}
+					}
 				}
 			}
 		});
+
+		// Wait for all terminateUser calls to complete
+		await Promise.all(terminatePromises);
 	} catch (error) {
-		console.error("Error checking expired users:", error);
+		console.error("Error checking expired users:", error.message);
 	}
 };
 
