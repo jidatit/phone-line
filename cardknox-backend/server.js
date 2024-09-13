@@ -448,12 +448,13 @@ const checkExpiredUsers = async () => {
 
 							if (num.endDate) {
 								const utcExpiryDate = dayjs(num.endDate).utc();
+								console.log("utc expiry", utcExpiryDate);
+								console.log("utc now", utcNow);
 
 								if (
 									utcExpiryDate.isBefore(utcNow) ||
 									utcExpiryDate.isSame(utcNow)
 								) {
-									console.log(utcExpiryDate, utcNow);
 									console.log("Terminating user:", num.domainUserId);
 									terminatePromises.push(
 										terminateUser(
@@ -503,8 +504,8 @@ const checkExpiredUsers = async () => {
 	}
 };
 
-cron.schedule("*/240 * * * * *", () => {
-	console.log("Running the cron job to check expired users every hour");
+cron.schedule("*/4 * * * *", () => {
+	console.log("Running the cron job to check expired users every 4 minutes");
 	checkExpiredUsers();
 });
 
