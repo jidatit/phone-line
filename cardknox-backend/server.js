@@ -34,7 +34,7 @@ admin.initializeApp({
 // Enable CORS for your frontend (adjust the origin as needed)
 app.use(
 	cors({
-		origin: "https://bestphonerental.com",
+		origin: "*",
 	}),
 );
 const db = admin.firestore();
