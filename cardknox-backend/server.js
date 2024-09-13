@@ -397,12 +397,29 @@ app.post("/terminate-user", async (req, res) => {
 });
 dayjs.extend(utc);
 
+const terminateUser = async (
+	domainUserId,
+	userId,
+	authId,
+	hash,
+	authAccount,
+) => {
+	try {
+		await axios.post("http://localhost:3000/terminate-user", {
+			// Adjust URL if needed
+			domainUserId,
+			userId,
+			authId,
+			hash,
+			authAccount,
+		});
+	} catch (error) {
+		console.error(`Error terminating user ${domainUserId}:`, error.message);
+	}
+};
 const checkExpiredUsers = async () => {
 	try {
-		// Get the current time in UTC using dayjs
 		const utcNow = dayjs().utc();
-
-		// Convert dayjs UTC time to Firestore Timestamp
 		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
 
 		// Query to get all users from Firestore
@@ -413,8 +430,10 @@ const checkExpiredUsers = async () => {
 			return;
 		}
 
+		const terminatePromises = []; // Array to hold promises
+
 		// Iterate over each user document
-		usersSnapshot.forEach(async (userDoc) => {
+		usersSnapshot.forEach((userDoc) => {
 			const userId = userDoc.id;
 			const userData = userDoc.data();
 			const activatedNumbers = userData.activatedNumbers || {};
@@ -425,8 +444,7 @@ const checkExpiredUsers = async () => {
 			)) {
 				for (const [type, numbers] of Object.entries(numbersByType)) {
 					if (Array.isArray(numbers)) {
-						numbers.forEach(async (num) => {
-							// Skip if the number is already deactivated
+						numbers.forEach((num) => {
 							if (num.Activated === "Deactivated") {
 								return;
 							}
@@ -434,25 +452,24 @@ const checkExpiredUsers = async () => {
 							if (num.endDate) {
 								const utcExpiryDate = dayjs(num.endDate).utc();
 
-								// Check if the expiry date is before or equal to the current UTC time
 								if (
 									utcExpiryDate.isBefore(utcNow) ||
 									utcExpiryDate.isSame(utcNow)
 								) {
-									// Call terminateUser function
 									console.log("Terminating user:", num.domainUserId);
-									await terminateUser(
-										num.domainUserId,
-										userId,
-										authId,
-										hash,
-										authAccount,
+									terminatePromises.push(
+										terminateUser(
+											num.domainUserId,
+											userId,
+											authId,
+											hash,
+											authAccount,
+										),
 									);
 								}
 							}
 						});
 					} else if (numbers && typeof numbers === "object") {
-						// Check if the number is already deactivated
 						if (numbers.Activated === "Deactivated") {
 							return;
 						}
@@ -464,30 +481,31 @@ const checkExpiredUsers = async () => {
 								utcExpiryDate.isBefore(utcNow) ||
 								utcExpiryDate.isSame(utcNow)
 							) {
-								// Call terminateUser function
 								console.log("Terminating user:", numbers.domainUserId);
-								await terminateUser(
-									numbers.domainUserId,
-									userId,
-									authId,
-									hash,
-									authAccount,
+								terminatePromises.push(
+									terminateUser(
+										numbers.domainUserId,
+										userId,
+										authId,
+										hash,
+										authAccount,
+									),
 								);
-
-								// Mark number as deactivated
-								// numbers.Activated = "Deactivated";
 							}
 						}
 					}
 				}
 			}
 		});
+
+		// Wait for all terminateUser calls to complete
+		await Promise.all(terminatePromises);
 	} catch (error) {
 		console.error("Error checking expired users:", error.message);
 	}
 };
 
-cron.schedule("0 * * * *", () => {
+cron.schedule("*/30 * * * * *", () => {
 	console.log("Running the cron job to check expired users every hour");
 	checkExpiredUsers();
 });

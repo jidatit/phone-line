@@ -49,7 +49,7 @@ const PaymentModal = ({ open, handleClose }) => {
 			console.log("Payment Response", paymentResponse);
 
 			// Check if the payment was approved
-			if (paymentResponse.xStatus !== "Approved") {
+			if (paymentResponse.xStatus === "Approved") {
 				const { amount } = formData;
 				const { simNumber } = formData;
 
