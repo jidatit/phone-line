@@ -456,6 +456,7 @@ const checkExpiredUsers = async () => {
 									utcExpiryDate.isBefore(utcNow) ||
 									utcExpiryDate.isSame(utcNow)
 								) {
+									console.log(utcExpiryDate, utcNow);
 									console.log("Terminating user:", num.domainUserId);
 									terminatePromises.push(
 										terminateUser(
