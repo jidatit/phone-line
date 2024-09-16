@@ -134,12 +134,7 @@ const ReportsTable = () => {
 							// biome-ignore lint/complexity/noForEach: <explanation>
 							detailsArray.forEach((details) => {
 								// Extract necessary details
-								const {
-									number,
-									startDate,
-									endDate,
-									Activated: status,
-								} = details;
+								const { number, startDate, endDate, Activated } = details;
 
 								// Check if startDate and endDate are Firestore Timestamps
 								const purchaseDate =
@@ -153,7 +148,6 @@ const ReportsTable = () => {
 										: new Date(endDate).toLocaleDateString();
 
 								// Extract balance from activatedNumbers for the specific number
-								const balance = activatedNumbers[simNumber]?.balance || 0;
 
 								// Check if simNumber already exists in the Map
 								if (!uniqueNumbers.has(simNumber)) {
@@ -162,8 +156,7 @@ const ReportsTable = () => {
 										simNumber: simNumber, // Include the simNumber in the output
 										purchaseDate: purchaseDate,
 										expireDate: expireDate,
-										status: status, // Status as "Activated" or "Pending"
-										currentBalance: balance,
+										Activated: Activated, // Status as "Activated" or "Pending"
 									});
 								} else {
 									// Optionally, update the existing entry if necessary
@@ -300,6 +293,12 @@ const ReportsTable = () => {
 		<>
 			<div className="w-full flex flex-row justify-between items-center mb-8">
 				<h1 className="text-black text-xl font-bold">Billing</h1>
+				<button
+					onClick={handleOpenExtendExpirationDate}
+					className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
+				>
+					Add Funds to Account
+				</button>
 			</div>
 
 			<div className="w-full flex flex-col justify-center items-center">
@@ -377,9 +376,7 @@ const ReportsTable = () => {
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Expiration Date
 									</th>
-									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Current Balance
-									</th>
+
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Status
 									</th>
@@ -443,21 +440,7 @@ const ReportsTable = () => {
 													<div>{data.expireDate}</div>
 												)}
 											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.currentBalance ? (
-													<div> - </div>
-												) : (
-													<div> ${data.currentBalance}</div>
-												)}
-											</td>
+
 											<td
 												className={`py-2 px-3 text-base  font-normal ${
 													index == 0
@@ -498,7 +481,7 @@ const ReportsTable = () => {
 													onClick={handleOpenExtendExpirationDate}
 													className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
 												>
-													Add Funds to Account
+													Extend Expiration Date
 												</button>
 											</td>
 										</tr>

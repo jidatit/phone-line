@@ -297,7 +297,6 @@ app.post("/activate-sim", async (req, res) => {
 				[simNumber]: {
 					IL: groupedNumbers.IL || [],
 					US: groupedNumbers.US || [],
-					balance: 0,
 				},
 			};
 

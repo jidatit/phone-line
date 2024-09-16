@@ -207,6 +207,7 @@ const ActivateLine = () => {
 							component="form"
 							noValidate
 							autoComplete="off"
+							onSubmit={handleConfirmSimNumber}
 						>
 							<TextField
 								id="sim-number"
@@ -218,6 +219,7 @@ const ActivateLine = () => {
 						</Box>
 						<div className="w-full flex justify-end items-center">
 							<button
+								type="submit"
 								onClick={handleConfirmSimNumber}
 								className="px-6 py-2 flex flex-row justify-center items-center gap-2 rounded-md text-white bg-[#FF6978]"
 							>
@@ -262,6 +264,7 @@ const ActivateLine = () => {
 						</div>
 						<div className="w-full flex justify-center items-center">
 							<button
+								type="submit"
 								onClick={handleConfirmDates}
 								className="w-full lg:w-[50%] px-6 py-3 font-semibold rounded-md text-lg text-white bg-[#FF6978]"
 							>

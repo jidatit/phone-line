@@ -47,6 +47,7 @@ const UserSignup = () => {
 				...userDataWithoutPasswords,
 
 				status: "Pending", // Initial status as Pending
+				balance: 0,
 			});
 
 			// Show success message and reset form
