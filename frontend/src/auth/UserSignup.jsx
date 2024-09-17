@@ -46,7 +46,7 @@ const UserSignup = () => {
 			await setDoc(doc(db, "users", user.uid), {
 				...userDataWithoutPasswords,
 
-				status: "Pending", // Initial status as Pending
+				// status: "Pending", // Initial status as Pending
 				balance: 0,
 			});
 

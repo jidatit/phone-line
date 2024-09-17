@@ -78,11 +78,6 @@ app.post("/activate-sim", async (req, res) => {
 				responseDetails.step1.error = errorMessage;
 				return res.json(responseDetails);
 			}
-			// if (userCreationResponse.data.status !== "OK") {
-			// 	responseDetails.step1.status = "Failed";
-			// 	responseDetails.step1.error = "Failed to create user via API";
-			// 	return res.json(responseDetails);
-			// }
 
 			responseDetails.step1.status = "Success";
 			responseDetails.step1.domainUserId = userCreationResponse.data.data.id;
@@ -133,16 +128,6 @@ app.post("/activate-sim", async (req, res) => {
 				responseDetails.step2.error = errorMessage;
 				return res.json(responseDetails);
 			}
-			// if (apiResponse.data.error_code === 270) {
-			// 	responseDetails.step2.status = "Failed";
-			// 	responseDetails.step2.error = "sim card already taken";
-			// 	return res.json(responseDetails);
-			// }
-			// if (apiResponse.data.status !== "OK") {
-			// 	responseDetails.step2.status = "Failed";
-			// 	responseDetails.step2.error = "Failed to activate SIM";
-			// 	return res.json(responseDetails);
-			// }
 
 			responseDetails.step2.status = "Success";
 
@@ -208,7 +193,9 @@ app.post("/activate-sim", async (req, res) => {
 			(num) => num.type === "US",
 		);
 		if (usNumber) {
+			console.log("called twice");
 			try {
+				console.log("called twice");
 				let modifyResponse = await axios.post(
 					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 					{
@@ -248,8 +235,6 @@ app.post("/activate-sim", async (req, res) => {
 						responseDetails.step3.error = errorMessage;
 						return res.json(responseDetails);
 					}
-					// responseDetails.step3.status = "Failed";
-					// responseDetails.step3.error = "Failed to modify caller ID";
 				}
 			} catch (error) {
 				const errorCode = apiResponse.data.error_code;
@@ -522,7 +507,6 @@ app.post("/process-payment", async (req, res) => {
 		xCVV: paymentDetails.cvc,
 		xAmount: paymentDetails.amount,
 		xName: paymentDetails.cardName,
-		xCustom01: paymentDetails.simNumber, // Custom fields as needed
 	};
 	try {
 		const response = await axios.post(

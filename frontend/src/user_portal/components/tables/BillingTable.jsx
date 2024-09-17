@@ -11,6 +11,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore"; // Ensure Timestamp is imported if used
 import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
+import { ToastContainer } from "react-toastify";
 
 const style = {
 	position: "absolute",
@@ -291,6 +292,7 @@ const ReportsTable = () => {
 
 	return (
 		<>
+			<ToastContainer />
 			<div className="w-full flex flex-row justify-between items-center mb-8">
 				<h1 className="text-black text-xl font-bold">Billing</h1>
 				<button
@@ -380,9 +382,6 @@ const ReportsTable = () => {
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Status
 									</th>
-									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Extend Date
-									</th>
 								</tr>
 							</thead>
 
@@ -467,22 +466,6 @@ const ReportsTable = () => {
 															<h1> {data.Activated} </h1>
 														</div>
 													)}
-											</td>
-											<td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												<button
-													onClick={handleOpenExtendExpirationDate}
-													className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
-												>
-													Extend Expiration Date
-												</button>
 											</td>
 										</tr>
 									))}

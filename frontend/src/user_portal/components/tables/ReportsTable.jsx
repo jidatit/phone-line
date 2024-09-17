@@ -131,6 +131,16 @@ const ReportsTable = () => {
 				for (const [simNumber, numbersByType] of Object.entries(
 					activatedNumbers,
 				)) {
+					// Prepare an object to hold both IL and US numbers
+					let rowData = {
+						simNumber: simNumber,
+						ilNumber: null,
+						usNumber: null,
+						startDate: null,
+						endDate: null,
+						status: null,
+					};
+
 					// Iterate over each country (IL, US) and its numbers
 					for (const [country, numbers] of Object.entries(numbersByType)) {
 						// Ensure numbers is an array before using forEach
@@ -147,19 +157,23 @@ const ReportsTable = () => {
 										? num.endDate.toDate().toLocaleDateString()
 										: new Date(num.endDate).toLocaleDateString();
 
-								numbersData.push({
-									number: num.number,
-									simNumber: simNumber, // Include the simNumber in the output
-									country: country, // Include the country (IL or US) in the output
-									purchaseDate: purchaseDate,
-									expireDate: expireDate,
-									status: num.Activated,
-								});
+								// Add the number data to rowData
+								if (country === "IL") {
+									rowData.ilNumber = num.number;
+								} else if (country === "US") {
+									rowData.usNumber = num.number;
+								}
+
+								// Update other common fields
+								rowData.startDate = purchaseDate;
+								rowData.endDate = expireDate;
+								rowData.status = num.Activated;
 							});
-						} else {
-							// Handle cases where numbers is not an array (optional)
 						}
 					}
+
+					// Push the combined row data for this simNumber
+					numbersData.push(rowData);
 				}
 
 				setLoading(false);
@@ -425,123 +439,80 @@ const ReportsTable = () => {
 			<div className="h-full bg-white flex items-center justify-center py-4">
 				<div className="w-full px-2">
 					<div className="w-full overflow-x-scroll md:overflow-auto max-w-7xl 2xl:max-w-none mt-2 ">
-						<table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border ">
+						<table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border">
 							<thead className="rounded-lg text-base text-white font-semibold w-full border-t-2 border-gray-300 pt-6 pb-6">
 								<tr>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Number
+										SIM Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										IL Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										US Number
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Purchase Date
 									</th>
-									<th className="py-3 px-3 justify-center gap-1 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Expiration Date
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Status
 									</th>
-									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Extend Date
-									</th> */}
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Extend
+									</th>
 								</tr>
 							</thead>
 
 							<tbody>
-								{rowsToShow &&
-									rowsToShow?.map((data, index) => (
+								{numbersData &&
+									numbersData.map((data, index) => (
 										<tr
-											className={`${
-												index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
-											}`}
+											className={`${index % 2 === 0 ? "bg-white" : "bg-[#222E3A]/[6%]"}`}
 											key={index}
 										>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.number ? (
-													<div> - </div>
-												) : (
-													<div>{data.number}</div>
-												)}
+											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+												{data.simNumber || "-"}
 											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.purchaseDate ? (
-													<div> - </div>
-												) : (
-													<div>{data.purchaseDate}</div>
-												)}
+											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+												{data.ilNumber || "-"}
 											</td>
-											<td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{!data?.expireDate ? (
-													<div> - </div>
-												) : (
-													<div>{data.expireDate}</div>
-												)}
+											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+												{data.usNumber || "-"}
 											</td>
-											<td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
-												{data?.status && data?.status === "Activated" && (
-													<div className="w-full flex flex-row justify-start items-center gap-2">
+											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+												{data.startDate || "-"}
+											</td>
+											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+												{data.endDate || "-"}
+											</td>
+											<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
+												{data.status === "Activated" ? (
+													<div className="flex items-center gap-2">
 														<FiberManualRecordIcon
 															sx={{ color: "#4CE13F", fontSize: 16 }}
 														/>
-														<h1> {data.status} </h1>
+														<h1>{data.status}</h1>
 													</div>
-												)}
-												{data?.status && data?.status === "Deactivated" && (
-													<div className="w-full flex flex-row justify-start items-center gap-2">
+												) : (
+													<div className="flex items-center gap-2">
 														<FiberManualRecordIcon
 															sx={{ color: "#C70000", fontSize: 16 }}
 														/>
-														<h1> {data.status} </h1>
+														<h1>{data.status}</h1>
 													</div>
 												)}
 											</td>
-											{/* <td
-												className={`py-2 px-3 text-base  font-normal ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
-											>
+											<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
 												<button
 													onClick={handleOpenExtendExpirationDate}
 													className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
 												>
 													Extend Expiration Date
 												</button>
-											</td> */}
+											</td>
 										</tr>
 									))}
 							</tbody>

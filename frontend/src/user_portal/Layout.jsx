@@ -14,6 +14,9 @@ import Modal from "@mui/material/Modal";
 import { useAuth } from "../../AuthContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../Firebase";
+
 const styleLogout = {
 	position: "absolute",
 	top: "50%",
@@ -31,6 +34,7 @@ const Layout = () => {
 	const [anchorEl, setAnchorEl] = useState(null);
 	const [activeMenuItem, setActiveMenuItem] = useState("/user_portal");
 	const [name, setName] = useState("");
+	const [balance, setBalance] = useState(currentUser?.data?.balance);
 	const open = Boolean(anchorEl);
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -44,7 +48,28 @@ const Layout = () => {
 		setDisplayName(isDesktop);
 		setShowNameInMenu(!isDesktop);
 		setName(currentUser?.data?.name);
+		setBalance(currentUser?.data?.balance);
 	}, []);
+
+	useEffect(() => {
+		// Ensure currentUser is available and has a UID
+		if (currentUser?.uid) {
+			const userDocRef = doc(db, "users", currentUser.uid);
+
+			// Subscribe to document updates
+			const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+				if (docSnapshot.exists()) {
+					const userData = docSnapshot.data();
+					setBalance(userData.balance);
+				} else {
+					console.error("No such document!");
+				}
+			});
+
+			// Cleanup subscription on component unmount
+			return () => unsubscribe();
+		}
+	}, [currentUser]);
 
 	useEffect(() => {
 		handleResize();
@@ -153,10 +178,27 @@ const Layout = () => {
 							<div className="font-bold text-2xl">Dashboard</div>
 						</div>
 						<div className="flex flex-cols justify-center items-center gap-0 lg:gap-2">
-							<Avatar src={UserAvatar} alt="Remy Sharp" />
+							{
+								<div className="flex items-center pr-10">
+									<h1 className="text-base font-semibold pr-2">Balance:</h1>
+									<span className="text-base font-medium text-green-500">
+										{balance} $
+									</span>
+								</div>
+							}
+
+							{/* User Avatar */}
+							<Avatar
+								src={UserAvatar}
+								alt="User Avatar"
+								className="w-10 h-10"
+							/>
+
+							{/* Display name if user is logged in */}
 							{displayName && (
-								<h1 className="text-base font-semibold pl-4"> {name}</h1>
+								<h1 className="text-base font-semibold pl-2">{name}</h1>
 							)}
+
 							<Button
 								id="basic-button"
 								aria-controls={open ? "basic-menu" : undefined}
@@ -181,6 +223,7 @@ const Layout = () => {
 										<AccountBoxOutlinedIcon /> {currentUser?.data?.name}{" "}
 									</MenuItem>
 								)}
+
 								<MenuItem onClick={NavToChangePass} className="gap-2">
 									{" "}
 									<LockResetOutlinedIcon /> Change Password

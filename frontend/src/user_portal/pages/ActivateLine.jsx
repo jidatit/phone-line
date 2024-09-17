@@ -21,10 +21,15 @@ import {
 } from "../../../utils/auth";
 import utc from "dayjs/plugin/utc";
 import Loader from "../../../utils/Loader";
+import {
+	calculateCharges,
+	hasSufficientBalance,
+} from "../../../utils/calculateCharge";
 const ActivateLine = () => {
 	dayjs.extend(utc);
+	const Today = dayjs().startOf("day");
 	const [simNumber, setSimNumber] = useState("");
-	const [startDate, setStartDate] = useState(null);
+	const [startDate, setStartDate] = useState(Today);
 	const [endDate, setEndDate] = useState(null);
 	const [simNumberState, setSimNumberState] = useState(true);
 	const [datePickerState, setDatePickerState] = useState(false);
@@ -39,7 +44,19 @@ const ActivateLine = () => {
 		setSimNumberState(true);
 		setDatePickerState(false);
 		setDisplayNumbers(false);
+		setStartDate(Today);
+		setEndDate(null);
 		setmsg("");
+	};
+
+	// Function to update balance after activation
+	const updateBalanceAfterActivation = async (
+		userDocRef,
+		currentBalance,
+		charge,
+	) => {
+		const updatedBalance = currentBalance - charge;
+		await updateDoc(userDocRef, { balance: updatedBalance });
 	};
 
 	const fetchUserData = async () => {
@@ -59,6 +76,26 @@ const ActivateLine = () => {
 	};
 
 	const activateSim = async (startDateZ, endDateZ) => {
+		// Fetch user document from Firestore
+		const userDocRef = doc(db, "users", userId);
+		const userDoc = await getDoc(userDocRef);
+
+		if (!userDoc.exists()) {
+			throw new Error("User document not found");
+		}
+
+		const userData = userDoc.data();
+		const currentBalance = userData.balance || 0;
+		console.log("balance", currentBalance);
+		const charge = calculateCharges(new Date(startDateZ), new Date(endDateZ));
+		console.log("charge", charge);
+
+		if (!hasSufficientBalance(currentBalance, charge)) {
+			toast.error("Insufficient balance for SIM activation");
+			handleReset();
+			return;
+		}
+
 		try {
 			setLoading(true);
 
@@ -91,11 +128,14 @@ const ActivateLine = () => {
 
 			if (step2.status === "Failed") {
 				toast.error(`Step 2 failed: ${step2.error}`);
-
 				setLoading(false);
 				handleReset();
 				setShowToast(false);
 				return;
+			}
+
+			if (step3.status === "Success") {
+				console.log("modified");
 			}
 
 			if (step3.status === "Failed") {
@@ -103,6 +143,10 @@ const ActivateLine = () => {
 				toast.error(`Step 3 failed: ${step3.error}`);
 			} else {
 				toast.success("SIM activation successful and caller ID modified");
+			}
+
+			if (step2.status === "Success") {
+				updateBalanceAfterActivation(userDocRef, currentBalance, charge);
 			}
 
 			// Show the numbers obtained from the API
@@ -237,13 +281,10 @@ const ActivateLine = () => {
 						<div className="w-full flex flex-row justify-start items-start gap-4">
 							<h1 className="font-semibold">
 								Start Date:{" "}
-								{startDate
-									? new Date(startDate).toISOString().split("T")[0]
-									: ""}
+								{startDate ? dayjs(startDate).format("YYYY-MM-DD") : ""}
 							</h1>
 							<h1 className="font-semibold">
-								End Date:{" "}
-								{endDate ? new Date(endDate).toISOString().split("T")[0] : ""}
+								End Date: {endDate ? dayjs(endDate).format("YYYY-MM-DD") : ""}
 							</h1>
 						</div>
 						<div className="w-full flex lg:flex-row flex-col justify-center items-center gap-2 border border-gray-300 pt-8">
@@ -252,6 +293,7 @@ const ActivateLine = () => {
 								<DateCalendar
 									value={startDate}
 									onChange={(newValue) => setStartDate(newValue)}
+									minDate={Today}
 								/>
 							</LocalizationProvider>
 							{/* End Date */}
