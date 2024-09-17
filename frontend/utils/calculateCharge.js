@@ -5,13 +5,13 @@ const CHARGES = {
 	30: 29,
 };
 export const calculateCharges = (startDate, endDate) => {
-	console.log("start", startDate);
-	console.log("end date", endDate);
+	// console.log("start", startDate);
+	// console.log("end date", endDate);
 
 	const millisecondsPerDay = 1000 * 60 * 60 * 24;
 	const daysDifference =
 		Math.ceil((endDate - startDate) / millisecondsPerDay) + 1;
-	console.log("days differ", daysDifference);
+	// console.log("days differ", daysDifference);
 
 	let charge = 0;
 	if (daysDifference <= 4) {
@@ -22,12 +22,9 @@ export const calculateCharges = (startDate, endDate) => {
 		charge = 19; // Charge for 14 days
 	} else if (daysDifference <= 30) {
 		charge = 29; // Charge for 30 days
-	} else if (daysDifference <= 60) {
-		charge = 29 * 2; // Double for 31-60 days
-	} else if (daysDifference <= 90) {
-		charge = 29 * 3; // Triple for 61-90 days
 	} else {
-		charge = 29 * 4; // Quadruple for more than 90 days
+		const fullPeriods = Math.ceil(daysDifference / 30); // Number of full 30-day periods
+		charge = 29 * fullPeriods; // Multiply 29 by the number of periods
 	}
 
 	return charge;

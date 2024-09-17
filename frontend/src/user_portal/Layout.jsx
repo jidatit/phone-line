@@ -48,7 +48,6 @@ const Layout = () => {
 		setDisplayName(isDesktop);
 		setShowNameInMenu(!isDesktop);
 		setName(currentUser?.data?.name);
-		setBalance(currentUser?.data?.balance);
 	}, []);
 
 	useEffect(() => {

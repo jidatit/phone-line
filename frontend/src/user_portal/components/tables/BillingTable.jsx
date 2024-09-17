@@ -292,7 +292,6 @@ const ReportsTable = () => {
 
 	return (
 		<>
-			<ToastContainer />
 			<div className="w-full flex flex-row justify-between items-center mb-8">
 				<h1 className="text-black text-xl font-bold">Billing</h1>
 				<button

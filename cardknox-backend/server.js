@@ -125,6 +125,7 @@ app.post("/activate-sim", async (req, res) => {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
+
 				responseDetails.step2.error = errorMessage;
 				return res.json(responseDetails);
 			}
@@ -194,7 +195,6 @@ app.post("/activate-sim", async (req, res) => {
 		);
 		if (usNumber) {
 			try {
-				console.log("called twice");
 				let modifyResponse = await axios.post(
 					"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
 					{
@@ -399,8 +399,8 @@ const terminateUser = async (
 };
 const checkExpiredUsers = async () => {
 	try {
-		const utcNow = dayjs().utc();
-		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
+		const israelTimeZone = "Asia/Jerusalem";
+		const utcNow = dayjs().tz(israelTimeZone); // Get the current time in Israel time zone
 
 		// Query to get all users from Firestore
 		const usersSnapshot = await admin.firestore().collection("users").get();
@@ -430,15 +430,13 @@ const checkExpiredUsers = async () => {
 							}
 
 							if (num.endDate) {
-								const utcExpiryDate = dayjs(num.endDate).utc();
+								const israelExpiryDate = dayjs(num.endDate).tz(israelTimeZone);
 
 								if (
-									utcExpiryDate.isBefore(utcNow) ||
-									utcExpiryDate.isSame(utcNow)
+									israelExpiryDate.isBefore(utcNow) ||
+									israelExpiryDate.isSame(utcNow)
 								) {
-									// console.log("utc expiry", utcExpiryDate);
-									// console.log("utc now", utcNow);
-									// console.log("Terminating user:", num.domainUserId);
+									// Terminate user if expiry date has passed
 									terminatePromises.push(
 										terminateUser(
 											num.domainUserId,
@@ -457,13 +455,15 @@ const checkExpiredUsers = async () => {
 						}
 
 						if (numbers.endDate) {
-							const utcExpiryDate = dayjs(numbers.endDate).utc();
+							const israelExpiryDate = dayjs(numbers.endDate).tz(
+								israelTimeZone,
+							);
 
 							if (
-								utcExpiryDate.isBefore(utcNow) ||
-								utcExpiryDate.isSame(utcNow)
+								israelExpiryDate.isBefore(utcNow) ||
+								israelExpiryDate.isSame(utcNow)
 							) {
-								// console.log("Terminating user:", numbers.domainUserId);
+								// Terminate user if expiry date has passed
 								terminatePromises.push(
 									terminateUser(
 										numbers.domainUserId,
@@ -500,7 +500,7 @@ app.post("/process-payment", async (req, res) => {
 		xVersion: "5.0.0",
 		xSoftwareVersion: "1.0.0",
 		xSoftwareName: "PhoneLIne",
-		xCommand: "cc:Credit",
+		xCommand: "cc:sale",
 		xCardNum: paymentDetails.cardNumber,
 		xExp: paymentDetails.expiryDate, // Format MMYY
 		xCVV: paymentDetails.cvc,

@@ -26,15 +26,33 @@ const schema = z.object({
 });
 
 const PaymentModal = ({ open, handleClose }) => {
+	const [formattedExpiryDate, setFormattedExpiryDate] = useState("");
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
+		setValue,
 	} = useForm({
 		resolver: zodResolver(schema),
 	});
+
+	const handleExpiryDateChange = (e) => {
+		let value = e.target.value.replace(/\D/g, ""); // Remove non-digit characters
+		if (value.length > 4) value = value.slice(0, 4); // Limit to 4 digits
+
+		// Format the display as MM/YY
+		let formatted = value;
+		if (value.length >= 3) {
+			formatted = `${value.slice(0, 2)}/${value.slice(2)}`;
+		}
+
+		setFormattedExpiryDate(formatted); // Update what the user sees
+
+		// Update the raw value in the form (MMYY)
+		setValue("expiryDate", value); // MMYY for the backend
+	};
 
 	const onSubmit = async (data) => {
 		const formData = {
@@ -63,7 +81,6 @@ const PaymentModal = ({ open, handleClose }) => {
 					toast.error("User document not found.");
 				}
 			} else {
-				toast.error("Payment not approved. Please try again.");
 				if (paymentResponse.xStatus === "Error") {
 					toast.error(`Error ${paymentResponse.xError}`);
 				}
@@ -122,7 +139,8 @@ const PaymentModal = ({ open, handleClose }) => {
 									label="Expiry Date"
 									placeholder="MM/YY"
 									fullWidth
-									{...register("expiryDate")}
+									value={formattedExpiryDate}
+									onChange={handleExpiryDateChange}
 									error={!!errors.expiryDate}
 									helperText={errors.expiryDate?.message}
 								/>

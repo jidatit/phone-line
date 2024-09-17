@@ -145,6 +145,7 @@ const ReportsTable = () => {
 					for (const [country, numbers] of Object.entries(numbersByType)) {
 						// Ensure numbers is an array before using forEach
 						if (Array.isArray(numbers)) {
+							// biome-ignore lint/complexity/noForEach: <explanation>
 							numbers.forEach((num) => {
 								// Check if num.startDate and num.endDate are Firestore Timestamps
 								const purchaseDate =
@@ -220,17 +221,14 @@ const ReportsTable = () => {
 	};
 
 	const [filters, setFilters] = useState({
-		fullName: "",
-		createdTimeFrom: null,
-		createdTimeTo: null,
+		simNumber: "",
+		number: "",
 		sortOrder: "asc",
 	});
-
 	const resetFilterData = () => {
 		setFilters({
-			fullName: "",
-			createdTimeFrom: null,
-			createdTimeTo: null,
+			simNumber: "",
+			number: "",
 			sortOrder: "asc",
 		});
 	};
@@ -238,26 +236,23 @@ const ReportsTable = () => {
 	const applyFilters = () => {
 		let filtered = numbersData;
 
-		if (filters.fullName) {
+		// Filter by simNumber
+		if (filters.simNumber) {
 			filtered = filtered.filter((item) =>
-				item.Full_Name.toLowerCase().includes(filters.fullName.toLowerCase()),
+				item.simNumber.toLowerCase().includes(filters.simNumber.toLowerCase()),
 			);
 		}
 
-		if (filters.createdTimeFrom) {
+		// Filter by Numbers (IL or US)
+		if (filters.number) {
 			filtered = filtered.filter(
 				(item) =>
-					new Date(item.Created_Time) >= new Date(filters.createdTimeFrom),
+					item.ilNumber?.toLowerCase().includes(filters.number.toLowerCase()) ||
+					item.usNumber?.toLowerCase().includes(filters.number.toLowerCase()),
 			);
 		}
 
-		if (filters.createdTimeTo) {
-			filtered = filtered.filter(
-				(item) =>
-					new Date(item.Created_Time) <= new Date(filters.createdTimeTo),
-			);
-		}
-
+		// Sort by Created Time
 		filtered.sort((a, b) => {
 			const dateA = new Date(a.Created_Time);
 			const dateB = new Date(b.Created_Time);
@@ -267,18 +262,11 @@ const ReportsTable = () => {
 		setFilteredNumbersData(filtered);
 	};
 
-	const handleFilterChange = (event) => {
-		const { name, value } = event.target;
+	const handleFilterChange = (e) => {
+		const { name, value } = e.target;
 		setFilters((prevFilters) => ({
 			...prevFilters,
 			[name]: value,
-		}));
-	};
-
-	const handleDateChange = (name, date) => {
-		setFilters((prevFilters) => ({
-			...prevFilters,
-			[name]: date,
 		}));
 	};
 
@@ -288,6 +276,7 @@ const ReportsTable = () => {
 			sortOrder: event.target.value,
 		}));
 	};
+
 	const terminateUser = async (domainUserId, userId, index, activated) => {
 		if (activated === "Deactivated") {
 			toast.error("User is Already terminated");
@@ -335,26 +324,6 @@ const ReportsTable = () => {
 			toast.error(error.message);
 		}
 	};
-	// useEffect(() => {
-	// 	const checkExpirationDates = () => {
-	// 		rowsToShow.forEach((data, index) => {
-	// 			console.log("data", data);
-	// 			if (new Date(data.expireDate) <= new Date()) {
-	// 				terminateUser(data?.domainUserId, data?.userId, index);
-	// 				toast.info(`Date is expired ${data?.simNumber} is terminated `);
-	// 			}
-	// 		});
-	// 	};
-
-	// 	// Run the check immediately on component mount
-	// 	checkExpirationDates();
-
-	// 	// Set up the interval to run every 5 minutes (300000 milliseconds)
-	// 	const intervalId = setInterval(checkExpirationDates, 30000);
-
-	// 	// Clear the interval on component unmount
-	// 	return () => clearInterval(intervalId);
-	// }, []);
 
 	useEffect(() => {
 		applyFilters();
@@ -385,29 +354,25 @@ const ReportsTable = () => {
 				</div>
 			</div>
 
-			{/* {showOrHideFilters === true ? (
+			{showOrHideFilters === true ? (
 				<>
 					<div className="w-full flex flex-col lg:flex-row justify-evenly items-center px-4 pt-4 gap-2">
 						<LocalizationProvider dateAdapter={AdapterDayjs}>
 							<TextField
-								label="Full Name"
+								label="SIM Number"
 								variant="outlined"
 								size="large"
-								name="fullName"
-								value={filters.fullName}
+								name="simNumber"
+								value={filters.simNumber}
 								onChange={handleFilterChange}
 							/>
-							<DatePicker
-								label="Created Time From"
-								value={filters.createdTimeFrom}
-								onChange={(date) => handleDateChange("createdTimeFrom", date)}
-								renderInput={(params) => <TextField {...params} size="small" />}
-							/>
-							<DatePicker
-								label="Created Time To"
-								value={filters.createdTimeTo}
-								onChange={(date) => handleDateChange("createdTimeTo", date)}
-								renderInput={(params) => <TextField {...params} size="small" />}
+							<TextField
+								label="Number"
+								variant="outlined"
+								size="large"
+								name="number"
+								value={filters.number}
+								onChange={handleFilterChange}
 							/>
 							<FormControl size="small" variant="outlined">
 								<InputLabel>Sort Order</InputLabel>
@@ -416,7 +381,7 @@ const ReportsTable = () => {
 									size="large"
 									name="sortOrder"
 									onChange={handleSortOrderChange}
-									label="Sort Created Time"
+									label="Sort Order"
 								>
 									<MenuItem value="asc">Ascending</MenuItem>
 									<MenuItem value="desc">Descending</MenuItem>
@@ -434,7 +399,7 @@ const ReportsTable = () => {
 				</>
 			) : (
 				<></>
-			)} */}
+			)}
 
 			<div className="h-full bg-white flex items-center justify-center py-4">
 				<div className="w-full px-2">
@@ -467,54 +432,53 @@ const ReportsTable = () => {
 							</thead>
 
 							<tbody>
-								{numbersData &&
-									numbersData.map((data, index) => (
-										<tr
-											className={`${index % 2 === 0 ? "bg-white" : "bg-[#222E3A]/[6%]"}`}
-											key={index}
-										>
-											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-												{data.simNumber || "-"}
-											</td>
-											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-												{data.ilNumber || "-"}
-											</td>
-											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-												{data.usNumber || "-"}
-											</td>
-											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-												{data.startDate || "-"}
-											</td>
-											<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-												{data.endDate || "-"}
-											</td>
-											<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
-												{data.status === "Activated" ? (
-													<div className="flex items-center gap-2">
-														<FiberManualRecordIcon
-															sx={{ color: "#4CE13F", fontSize: 16 }}
-														/>
-														<h1>{data.status}</h1>
-													</div>
-												) : (
-													<div className="flex items-center gap-2">
-														<FiberManualRecordIcon
-															sx={{ color: "#C70000", fontSize: 16 }}
-														/>
-														<h1>{data.status}</h1>
-													</div>
-												)}
-											</td>
-											<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
-												<button
-													onClick={handleOpenExtendExpirationDate}
-													className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
-												>
-													Extend Expiration Date
-												</button>
-											</td>
-										</tr>
-									))}
+								{rowsToShow?.map((data, index) => (
+									<tr
+										className={`${index % 2 === 0 ? "bg-white" : "bg-[#222E3A]/[6%]"}`}
+										key={index}
+									>
+										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+											{data.simNumber || "-"}
+										</td>
+										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+											{data.ilNumber || "-"}
+										</td>
+										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+											{data.usNumber || "-"}
+										</td>
+										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+											{data.startDate || "-"}
+										</td>
+										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
+											{data.endDate || "-"}
+										</td>
+										<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
+											{data.status === "Activated" ? (
+												<div className="flex items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#4CE13F", fontSize: 16 }}
+													/>
+													<h1>{data.status}</h1>
+												</div>
+											) : (
+												<div className="flex items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#C70000", fontSize: 16 }}
+													/>
+													<h1>{data.status}</h1>
+												</div>
+											)}
+										</td>
+										<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
+											<button
+												onClick={handleOpenExtendExpirationDate}
+												className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
+											>
+												Extend Expiration Date
+											</button>
+										</td>
+									</tr>
+								))}
 							</tbody>
 						</table>
 					</div>
