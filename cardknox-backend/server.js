@@ -399,8 +399,8 @@ const terminateUser = async (
 };
 const checkExpiredUsers = async () => {
 	try {
-		const israelTimeZone = "Asia/Jerusalem";
-		const utcNow = dayjs().tz(israelTimeZone); // Get the current time in Israel time zone
+		const utcNow = dayjs().utc();
+		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
 
 		// Query to get all users from Firestore
 		const usersSnapshot = await admin.firestore().collection("users").get();
@@ -430,13 +430,15 @@ const checkExpiredUsers = async () => {
 							}
 
 							if (num.endDate) {
-								const israelExpiryDate = dayjs(num.endDate).tz(israelTimeZone);
+								const utcExpiryDate = dayjs(num.endDate).utc();
 
 								if (
-									israelExpiryDate.isBefore(utcNow) ||
-									israelExpiryDate.isSame(utcNow)
+									utcExpiryDate.isBefore(utcNow) ||
+									utcExpiryDate.isSame(utcNow)
 								) {
-									// Terminate user if expiry date has passed
+									// console.log("utc expiry", utcExpiryDate);
+									// console.log("utc now", utcNow);
+									// console.log("Terminating user:", num.domainUserId);
 									terminatePromises.push(
 										terminateUser(
 											num.domainUserId,
@@ -455,15 +457,13 @@ const checkExpiredUsers = async () => {
 						}
 
 						if (numbers.endDate) {
-							const israelExpiryDate = dayjs(numbers.endDate).tz(
-								israelTimeZone,
-							);
+							const utcExpiryDate = dayjs(numbers.endDate).utc();
 
 							if (
-								israelExpiryDate.isBefore(utcNow) ||
-								israelExpiryDate.isSame(utcNow)
+								utcExpiryDate.isBefore(utcNow) ||
+								utcExpiryDate.isSame(utcNow)
 							) {
-								// Terminate user if expiry date has passed
+								// console.log("Terminating user:", numbers.domainUserId);
 								terminatePromises.push(
 									terminateUser(
 										numbers.domainUserId,
