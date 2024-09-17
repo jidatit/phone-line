@@ -43,49 +43,33 @@ const PaymentModal = ({ open, handleClose }) => {
 		};
 
 		try {
-			// Call the processPayment function with the form data
 			const paymentResponse = await processPayment(formData);
 
-			// Check if the payment was approved
 			if (paymentResponse.xStatus === "Approved") {
 				const { amount } = formData;
-
-				// Fetch the user document
 				const userDocRef = doc(db, "users", userId);
 				const userDoc = await getDoc(userDocRef);
 
 				if (userDoc.exists()) {
-					// Get the current balance
 					const currentBalance = Number.parseFloat(userDoc.data().balance) || 0;
-
-					// Calculate the updated balance
 					const updatedBalance = currentBalance + amount;
-
-					// Update the balance field in the Firestore document
 					await updateDoc(userDocRef, {
 						balance: updatedBalance,
 					});
 
-					console.log("Balance updated successfully for user:", userId);
-
-					// Handle success, e.g., show a success message or close the modal
 					handleClose();
-					alert("Payment successful!");
+					toast.success("Payment successful!");
 				} else {
-					// Handle case where the user document does not exist
 					toast.error("User document not found.");
-					console.error("No such document!");
 				}
 			} else {
-				alert("Payment not approved. Please try again.");
+				toast.error("Payment not approved. Please try again.");
 				if (paymentResponse.xStatus === "Error") {
 					toast.error(`Error ${paymentResponse.xError}`);
 				}
 			}
 		} catch (error) {
-			// Handle errors, e.g., show an error message
-			console.error("Payment processing failed", error);
-			toast.error(`Payment processing failed ${error}`);
+			toast.error(`Payment processing failed: ${error.message}`);
 		}
 	};
 
