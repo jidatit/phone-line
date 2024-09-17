@@ -193,7 +193,6 @@ app.post("/activate-sim", async (req, res) => {
 			(num) => num.type === "US",
 		);
 		if (usNumber) {
-			console.log("called twice");
 			try {
 				console.log("called twice");
 				let modifyResponse = await axios.post(
