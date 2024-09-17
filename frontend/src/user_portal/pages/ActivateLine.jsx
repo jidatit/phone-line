@@ -35,10 +35,10 @@ const ActivateLine = () => {
 	const [datePickerState, setDatePickerState] = useState(false);
 	const [displayNumbers, setDisplayNumbers] = useState(false);
 	const { currentUser } = useAuth();
+	const [charges, setCharges] = useState(0); // State for charges
 	const [loading, setLoading] = useState(false);
 	const userId = currentUser.uid;
 	const [numbers, setNumbers] = useState("");
-	const [charges, setCharges] = useState(0); // State for charges
 	const [showToast, setShowToast] = useState(false);
 	const [toastMessage, setToastMessage] = useState("");
 	const handleReset = () => {
@@ -87,8 +87,9 @@ const ActivateLine = () => {
 
 		const userData = userDoc.data();
 		const currentBalance = userData.balance || 0;
-
+		console.log("balance", currentBalance);
 		const charge = calculateCharges(new Date(startDateZ), new Date(endDateZ));
+		console.log("charge", charge);
 
 		if (!hasSufficientBalance(currentBalance, charge)) {
 			toast.error("Insufficient balance for SIM activation");
@@ -176,6 +177,12 @@ const ActivateLine = () => {
 			toast.error("Please Enter the Sim Number");
 		}
 	};
+	useEffect(() => {
+		if (startDate && endDate) {
+			const charge = calculateCharges(new Date(startDate), new Date(endDate));
+			setCharges(charge);
+		}
+	}, [startDate, endDate]);
 
 	const handleConfirmDates = async () => {
 		if (startDate && endDate) {
@@ -233,12 +240,6 @@ const ActivateLine = () => {
 	if (loading) {
 		return <Loader />;
 	}
-	useEffect(() => {
-		if (startDate && endDate) {
-			const charge = calculateCharges(new Date(startDate), new Date(endDate));
-			setCharges(charge);
-		}
-	}, [startDate, endDate]);
 
 	return (
 		<>
