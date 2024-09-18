@@ -471,7 +471,7 @@ const AllUsersTable = () => {
 				...prevState,
 				[index]: true,
 			}));
-
+			const updateFirebase = true;
 			// Make the API request to the backend endpoint
 			const response = await axios.post(
 				"https://phone-line-backend.onrender.com/terminate-user",
@@ -481,6 +481,7 @@ const AllUsersTable = () => {
 					authId,
 					hash,
 					authAccount,
+					updateFirebase,
 				},
 			);
 

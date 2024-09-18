@@ -125,8 +125,17 @@ app.post("/activate-sim", async (req, res) => {
 				const errorMessage =
 					errorMessages[errorCode] || "Unknown error occurred";
 				responseDetails.step2.status = "Failed";
-
 				responseDetails.step2.error = errorMessage;
+
+				await terminateUser(
+					domainUserId,
+					userId,
+					authId,
+					hash,
+					authAccount,
+					false,
+				);
+
 				return res.json(responseDetails);
 			}
 
@@ -302,8 +311,9 @@ app.post("/activate-sim", async (req, res) => {
 });
 
 app.post("/terminate-user", async (req, res) => {
-	const { domainUserId, userId, authId, hash, authAccount } = req.body;
-	// console.log("ter", req.body);
+	const { domainUserId, userId, authId, hash, authAccount, updateFirebase } =
+		req.body; // 'updateFirebase' is the new flag
+
 	try {
 		// Make the API request to terminate the user
 		const apiResponse = await axios.post(
@@ -314,6 +324,7 @@ app.post("/terminate-user", async (req, res) => {
 				data: { domain_user_id: domainUserId },
 			},
 		);
+
 		const errorCode = apiResponse.data.error_code;
 
 		// Check for errors in API response
@@ -323,58 +334,66 @@ app.post("/terminate-user", async (req, res) => {
 		}
 
 		if (apiResponse.data.status === "OK") {
-			const userDocRef = admin.firestore().collection("users").doc(userId);
-			const userDoc = await userDocRef.get();
+			// Only proceed with Firebase update if updateFirebase flag is true
+			if (updateFirebase) {
+				const userDocRef = admin.firestore().collection("users").doc(userId);
+				const userDoc = await userDocRef.get();
 
-			if (userDoc.exists) {
-				const activatedNumbers = userDoc.data().activatedNumbers || {};
+				if (userDoc.exists) {
+					const activatedNumbers = userDoc.data().activatedNumbers || {};
 
-				// Update only the numbers associated with the specific domainUserId
-				const updatedNumbers = {};
-				for (let simNumber in activatedNumbers) {
-					updatedNumbers[simNumber] = {};
-					for (const type in activatedNumbers[simNumber]) {
-						const numbers = activatedNumbers[simNumber][type];
+					// Update only the numbers associated with the specific domainUserId
+					const updatedNumbers = {};
+					for (let simNumber in activatedNumbers) {
+						updatedNumbers[simNumber] = {};
+						for (const type in activatedNumbers[simNumber]) {
+							const numbers = activatedNumbers[simNumber][type];
 
-						// Check if numbers is an array
-						if (Array.isArray(numbers)) {
-							updatedNumbers[simNumber][type] = numbers.map((num) => {
-								// Only deactivate numbers with the matching domainUserId
-								if (num.domainUserId === domainUserId) {
-									return { ...num, Activated: "Deactivated" };
-								}
-								return num;
-							});
-						} else {
-							// Handle the case where numbers is not an array
-							// console.warn(
-							// 	`Expected an array for activatedNumbers[${simNumber}][${type}], but found:`,
-							// 	numbers,
-							// );
-							updatedNumbers[simNumber][type] = numbers; // Or handle it differently based on your needs
+							// Check if numbers is an array
+							if (Array.isArray(numbers)) {
+								updatedNumbers[simNumber][type] = numbers.map((num) => {
+									// Only deactivate numbers with the matching domainUserId
+									if (num.domainUserId === domainUserId) {
+										return { ...num, Activated: "Deactivated" };
+									}
+									return num;
+								});
+							} else {
+								updatedNumbers[simNumber][type] = numbers; // Handle non-array case
+							}
 						}
 					}
+
+					// Update the Firestore document with the new status
+					await userDocRef.update({ activatedNumbers: updatedNumbers });
+					return res.status(200).json({
+						status: "Success",
+						message: "User is terminated successfully and Firebase is updated",
+					});
+				} else {
+					return res
+						.status(404)
+						.json({ status: "Failed", message: "User not found" });
 				}
-				// console.log(updatedNumbers);
-				// Update the Firestore document with the new status
-				await userDocRef.update({ activatedNumbers: updatedNumbers });
-				res.status(200).json({
-					status: "Success",
-					message: "User is terminated successfully",
-				});
 			} else {
-				res.status(404).json({ status: "Failed", message: "User not found" });
+				// If updateFirebase is false, skip the Firebase part
+				return res.status(200).json({
+					status: "Success",
+					message: "User is terminated successfully without updating Firebase",
+				});
 			}
 		} else {
-			res
-				.status(400)
-				.json({ status: "Failed", message: "Failed to terminate the user" });
+			return res.status(400).json({
+				status: "Failed",
+				message: "Failed to terminate the user",
+			});
 		}
 	} catch (error) {
 		console.error("Error terminating user:", error.message);
-		res.status(500).json({ status: "Failed", message: error.message });
+		return res.status(500).json({ status: "Failed", message: error.message });
 	}
 });
+
 dayjs.extend(utc);
 
 const terminateUser = async (
@@ -384,6 +403,7 @@ const terminateUser = async (
 	hash,
 	authAccount,
 ) => {
+	const updateFirebase = true;
 	try {
 		await axios.post("https://phone-line-backend.onrender.com/terminate-user", {
 			// Adjust URL if needed
@@ -392,6 +412,7 @@ const terminateUser = async (
 			authId,
 			hash,
 			authAccount,
+			updateFirebase,
 		});
 	} catch (error) {
 		console.error(`Error terminating user ${domainUserId}:`, error.message);
