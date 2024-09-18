@@ -18,6 +18,9 @@ import { useAuth } from "../../../../AuthContext";
 import { toast, ToastContainer } from "react-toastify";
 import { hash, authAccount, authId } from "../../../../utils/auth";
 import { Timestamp } from "firebase/firestore";
+import ExtendExpirationDateModal from "../ExtendExpirationDateModal";
+import timezone from "dayjs/plugin/timezone";
+import dayjs from "dayjs";
 import axios from "axios";
 const style = {
 	position: "absolute",
@@ -33,12 +36,15 @@ const style = {
 };
 
 const ReportsTable = () => {
+	dayjs.extend(timezone);
 	const [numbersData, setNumbersData] = useState([]);
 	const [filteredNumbersData, setFilteredNumbersData] = useState([]);
 	const [showOrHideFilters, setShowOrHideFilters] = useState(false);
 	const [rowPerPage, setRowPerPage] = useState(10);
 	const [rowsToShow, setRowsToShow] = useState([]);
 	const [currentPage, setCurrentPage] = useState(0);
+
+	const [simNumber, setSimNumber] = useState("");
 	const { currentUser } = useAuth();
 	const userId = currentUser?.uid;
 	const [loading, setLoading] = useState(false);
@@ -277,54 +283,6 @@ const ReportsTable = () => {
 		}));
 	};
 
-	const terminateUser = async (domainUserId, userId, index, activated) => {
-		if (activated === "Deactivated") {
-			toast.error("User is Already terminated");
-			return;
-		}
-		try {
-			setLoadingStates((prevState) => ({
-				...prevState,
-				[index]: true,
-			}));
-
-			// Make the API request to the backend endpoint
-			const response = await axios.post(
-				"https://phone-line-backend.onrender.com/terminate-user",
-				{
-					domainUserId,
-					userId,
-					authId,
-					hash,
-					authAccount,
-				},
-			);
-
-			if (response.data.status === "Success") {
-				setLoadingStates((prevState) => ({
-					...prevState,
-					[index]: false,
-				}));
-				toast.success(response.data.message);
-				getNumbersData();
-			} else {
-				setLoadingStates((prevState) => ({
-					...prevState,
-					[index]: false,
-				}));
-				console.error("API response error:", response.data);
-				toast.error(response.data.message);
-			}
-		} catch (error) {
-			setLoadingStates((prevState) => ({
-				...prevState,
-				[index]: false,
-			}));
-			console.error("Error terminating user:", error.message);
-			toast.error(error.message);
-		}
-	};
-
 	useEffect(() => {
 		applyFilters();
 	}, [filters, numbersData]);
@@ -447,10 +405,18 @@ const ReportsTable = () => {
 											{data.usNumber || "-"}
 										</td>
 										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-											{data.startDate || "-"}
+											{data.startDate
+												? dayjs(data.startDate)
+														.tz("Asia/Jerusalem")
+														.format("YYYY-MM-DD")
+												: "-"}
 										</td>
 										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
-											{data.endDate || "-"}
+											{data.endDate
+												? dayjs(data.endDate)
+														.tz("Asia/Jerusalem")
+														.format("YYYY-MM-DD")
+												: "-"}
 										</td>
 										<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
 											{data.status === "Activated" ? (
@@ -471,7 +437,10 @@ const ReportsTable = () => {
 										</td>
 										<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">
 											<button
-												onClick={handleOpenExtendExpirationDate}
+												onClick={() => {
+													setSimNumber(data?.simNumber);
+													handleOpenExtendExpirationDate();
+												}}
 												className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
 											>
 												Extend Expiration Date
@@ -596,7 +565,7 @@ const ReportsTable = () => {
 						</div>
 					</div>
 
-					<Modal
+					{/* <Modal
 						open={openExtendExpirationDate}
 						onClose={handleCloseExtendExpirationDate}
 						aria-describedby="modal-data"
@@ -622,7 +591,13 @@ const ReportsTable = () => {
 								</div>
 							</div>
 						</Box>
-					</Modal>
+					</Modal> */}
+					<ExtendExpirationDateModal
+						open={openExtendExpirationDate}
+						onClose={handleCloseExtendExpirationDate}
+						userId={userId}
+						simNumber={simNumber}
+					/>
 				</div>
 			</div>
 		</>

@@ -15,6 +15,7 @@ import {
 	getDoc,
 	updateDoc,
 } from "firebase/firestore";
+import FundsModal from "../AddFundsModal";
 import { db } from "../../../../Firebase";
 import dayjs from "dayjs"; // Import dayjs or any other date formatting library
 import { toast, ToastContainer } from "react-toastify";
@@ -52,7 +53,9 @@ const AllUsersTable = () => {
 	const [currentPage, setCurrentPage] = useState(0);
 	const [openMobile, setOpenMobile] = useState(false);
 	const handleOpenMobile = () => setOpenMobile(true);
+	const [openFundsModal, setOpenFundsModal] = useState(false);
 	const handleCloseMobile = () => setOpenMobile(false);
+	const [userId, setUserId] = useState(false);
 	const [loadingStates, setLoadingStates] = useState({});
 	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
 		useState(false);
@@ -60,6 +63,10 @@ const AllUsersTable = () => {
 		setOpenExtendExpirationDate(true);
 	const handleCloseExtendExpirationDate = () =>
 		setOpenExtendExpirationDate(false);
+
+	const handleOpenFundsModal = () => setOpenFundsModal(true);
+
+	const handleCloseFundsModal = () => setOpenFundsModal(false);
 
 	const showFilters = () => {
 		if (showOrHideFilters === false) {
@@ -628,9 +635,7 @@ const AllUsersTable = () => {
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Add Funds
 									</th>
-									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Remove Funds
-									</th>
+
 									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Deactivate Number
 									</th> */}
@@ -742,26 +747,6 @@ const AllUsersTable = () => {
 														sx={{ color: "#C70000", fontSize: 16 }}
 													/>
 													<h1 className="pr-4"> {data.activated} </h1>
-													<DoneIcon
-														sx={{
-															color: "#4CE13F",
-															fontSize: 28,
-															fontWeight: "bold",
-															cursor: "pointer",
-														}}
-													/>
-													<div className="font-medium text-lg text-gray-800">
-														{" "}
-														|{" "}
-													</div>
-													<CloseIcon
-														sx={{
-															color: "#C70000",
-															fontSize: 28,
-															fontWeight: "bold",
-															cursor: "pointer",
-														}}
-													/>
 												</div>
 											)}
 										</td>
@@ -789,27 +774,15 @@ const AllUsersTable = () => {
 														: "border-t"
 											} whitespace-nowrap`}
 										>
+											{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 											<button
-												onClick={handleOpenExtendExpirationDate}
+												onClick={() => {
+													setUserId(data?.userId);
+													handleOpenFundsModal();
+												}}
 												className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
 											>
 												Add Funds
-											</button>
-										</td>
-										<td
-											className={`py-2 px-3 text-base  font-normal ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											<button
-												onClick={handleOpenExtendExpirationDate}
-												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
-											>
-												Remove Funds
 											</button>
 										</td>
 
@@ -975,7 +948,11 @@ const AllUsersTable = () => {
 							</ul>
 						</div>
 					</div>
-
+					<FundsModal
+						open={openFundsModal}
+						handleClose={handleCloseFundsModal}
+						userId={userId}
+					/>
 					<Modal
 						open={openExtendExpirationDate}
 						onClose={handleCloseExtendExpirationDate}

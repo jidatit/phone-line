@@ -6,11 +6,30 @@ const app = express();
 const cron = require("node-cron");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
 dayjs.extend(utc);
+dayjs.extend(timezone);
 require("dotenv").config();
 app.use(express.json());
 const { hash, authAccount, authId } = require("./utils/auth");
 const { errorMessages } = require("./utils/errorMessages");
+
+const getApiKeyFromFirestore = async () => {
+	try {
+		const docRef = db.collection("config").doc("apiKeys");
+		const docSnap = await docRef.get();
+
+		if (docSnap.exists) {
+			return docSnap.data().CARDKNOX_API_KEY;
+		} else {
+			console.error("No API key document found!");
+			return null;
+		}
+	} catch (error) {
+		console.error("Error fetching API key from Firestore:", error);
+		return null;
+	}
+};
 
 const serviceAccount = {
 	type: "service_account",
@@ -420,10 +439,8 @@ const terminateUser = async (
 };
 const checkExpiredUsers = async () => {
 	try {
-		const utcNow = dayjs().utc();
-		const utcNowTimestamp = admin.firestore.Timestamp.fromDate(utcNow.toDate());
+		const israelNow = dayjs().tz("Asia/Jerusalem");
 
-		// Query to get all users from Firestore
 		const usersSnapshot = await admin.firestore().collection("users").get();
 
 		if (usersSnapshot.empty) {
@@ -431,35 +448,30 @@ const checkExpiredUsers = async () => {
 			return;
 		}
 
-		const terminatePromises = []; // Array to hold promises
+		const terminatePromises = [];
 
-		// Iterate over each user document
+		// biome-ignore lint/complexity/noForEach: <explanation>
 		usersSnapshot.forEach((userDoc) => {
 			const userId = userDoc.id;
 			const userData = userDoc.data();
 			const activatedNumbers = userData.activatedNumbers || {};
 
-			// Iterate through activatedNumbers
 			for (const [simNumber, numbersByType] of Object.entries(
 				activatedNumbers,
 			)) {
 				for (const [type, numbers] of Object.entries(numbersByType)) {
 					if (Array.isArray(numbers)) {
+						// biome-ignore lint/complexity/noForEach: <explanation>
 						numbers.forEach((num) => {
 							if (num.Activated === "Deactivated") {
 								return;
 							}
 
 							if (num.endDate) {
-								const utcExpiryDate = dayjs(num.endDate).utc();
-
-								if (
-									utcExpiryDate.isBefore(utcNow) ||
-									utcExpiryDate.isSame(utcNow)
-								) {
-									// console.log("utc expiry", utcExpiryDate);
-									// console.log("utc now", utcNow);
-									// console.log("Terminating user:", num.domainUserId);
+								const israelExpiryDate = dayjs(num.endDate)
+									.tz("Asia/Jerusalem")
+									.endOf("day");
+								if (israelNow.isAfter(israelExpiryDate)) {
 									terminatePromises.push(
 										terminateUser(
 											num.domainUserId,
@@ -478,13 +490,10 @@ const checkExpiredUsers = async () => {
 						}
 
 						if (numbers.endDate) {
-							const utcExpiryDate = dayjs(numbers.endDate).utc();
-
-							if (
-								utcExpiryDate.isBefore(utcNow) ||
-								utcExpiryDate.isSame(utcNow)
-							) {
-								// console.log("Terminating user:", numbers.domainUserId);
+							const israelExpiryDate = dayjs(numbers.endDate)
+								.tz("Asia/Jerusalem")
+								.endOf("day");
+							if (israelNow.isAfter(israelExpiryDate)) {
 								terminatePromises.push(
 									terminateUser(
 										numbers.domainUserId,
@@ -501,7 +510,6 @@ const checkExpiredUsers = async () => {
 			}
 		});
 
-		// Wait for all terminateUser calls to complete
 		await Promise.all(terminatePromises);
 	} catch (error) {
 		console.error("Error checking expired users:", error.message);
@@ -516,19 +524,24 @@ cron.schedule("0 * * * *", () => {
 app.post("/process-payment", async (req, res) => {
 	const paymentDetails = req.body;
 
-	const requestData = {
-		xKey: process.env.CARDKNOX_API_KEY,
-		xVersion: "5.0.0",
-		xSoftwareVersion: "1.0.0",
-		xSoftwareName: "PhoneLIne",
-		xCommand: "cc:sale",
-		xCardNum: paymentDetails.cardNumber,
-		xExp: paymentDetails.expiryDate, // Format MMYY
-		xCVV: paymentDetails.cvc,
-		xAmount: paymentDetails.amount,
-		xName: paymentDetails.cardName,
-	};
 	try {
+		const apiKey = await getApiKeyFromFirestore();
+		if (!apiKey) {
+			return res.status(500).json({ error: "API key not found" });
+		}
+
+		const requestData = {
+			xKey: apiKey,
+			xVersion: "5.0.0",
+			xSoftwareVersion: "1.0.0",
+			xSoftwareName: "PhoneLIne",
+			xCommand: "cc:sale",
+			xCardNum: paymentDetails.cardNumber,
+			xExp: paymentDetails.expiryDate, // Format MMYY
+			xCVV: paymentDetails.cvc,
+			xAmount: paymentDetails.amount,
+			xName: paymentDetails.cardName,
+		};
 		const response = await axios.post(
 			"https://x1.cardknox.com/gatewayjson",
 			requestData,

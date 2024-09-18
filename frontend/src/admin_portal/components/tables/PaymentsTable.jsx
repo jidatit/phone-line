@@ -1,259 +1,303 @@
-
 import React, { useState, useMemo, useEffect } from "react";
-import TuneIcon from '@mui/icons-material/Tune';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import FormControl from '@mui/material/FormControl';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import DoneIcon from '@mui/icons-material/Done';
-import CloseIcon from '@mui/icons-material/Close';
-
+import TuneIcon from "@mui/icons-material/Tune";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import FormControl from "@mui/material/FormControl";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import DoneIcon from "@mui/icons-material/Done";
+import CloseIcon from "@mui/icons-material/Close";
+import BillingChargesModal from "../Charges";
+import ApiKeyModal from "../ApiModal";
 const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
-    p: 4,
-    overflow: 'auto',
-    maxHeight: '100vh'
+	position: "absolute",
+	top: "50%",
+	left: "50%",
+	transform: "translate(-50%, -50%)",
+	bgcolor: "background.paper",
+	border: "2px solid #000",
+	boxShadow: 24,
+	p: 4,
+	overflow: "auto",
+	maxHeight: "100vh",
 };
 
 const PaymentsTable = () => {
-    const [numbersData, setNumbersData] = useState([]);
-    const [filteredNumbersData, setFilteredNumbersData] = useState([]);
-    const [showOrHideFilters, setShowOrHideFilters] = useState(false);
-    const [rowPerPage, setRowPerPage] = useState(10);
-    const [rowsToShow, setRowsToShow] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
+	const [numbersData, setNumbersData] = useState([]);
+	const [filteredNumbersData, setFilteredNumbersData] = useState([]);
+	const [showOrHideFilters, setShowOrHideFilters] = useState(false);
+	const [rowPerPage, setRowPerPage] = useState(10);
+	const [rowsToShow, setRowsToShow] = useState([]);
+	const [currentPage, setCurrentPage] = useState(0);
+	const [openModal, setOpenModal] = useState(false);
+	const [openApiModal, setOpenApiModal] = useState(false);
 
-    const [openExtendExpirationDate, setOpenExtendExpirationDate] = useState(false);
-    const handleOpenExtendExpirationDate = () => setOpenExtendExpirationDate(true);
-    const handleCloseExtendExpirationDate = () => setOpenExtendExpirationDate(false);
+	const handleOpenApiModal = () => setOpenApiModal(true);
+	const handleCloseApiModal = () => setOpenApiModal(false);
 
-    const showFilters = () => {
-        if (showOrHideFilters === false) {
-            setShowOrHideFilters(true);
-        } else {
-            setShowOrHideFilters(false);
-        }
-    };
+	const handleOpenModal = () => setOpenModal(true);
+	const handleCloseModal = () => setOpenModal(false);
+	const [openExtendExpirationDate, setOpenExtendExpirationDate] =
+		useState(false);
+	const handleOpenExtendExpirationDate = () =>
+		setOpenExtendExpirationDate(true);
+	const handleCloseExtendExpirationDate = () =>
+		setOpenExtendExpirationDate(false);
 
-    const handleRowPerPageChange = (event) => {
-        setRowPerPage(event.target.value);
-    };
+	const showFilters = () => {
+		if (showOrHideFilters === false) {
+			setShowOrHideFilters(true);
+		} else {
+			setShowOrHideFilters(false);
+		}
+	};
 
-    useEffect(() => {
-        getnumbersData();
-    }, []);
+	const handleRowPerPageChange = (event) => {
+		setRowPerPage(event.target.value);
+	};
 
-    useEffect(() => {
-        setRowsToShow(filteredNumbersData.slice(0, rowPerPage));
-    }, [filteredNumbersData, rowPerPage]);
+	useEffect(() => {
+		getnumbersData();
+	}, []);
 
-    const totalPage = useMemo(() => Math.ceil(filteredNumbersData.length / rowPerPage), [filteredNumbersData.length, rowPerPage]);
+	useEffect(() => {
+		setRowsToShow(filteredNumbersData.slice(0, rowPerPage));
+	}, [filteredNumbersData, rowPerPage]);
 
-    const generatePaginationLinks = () => {
-        const paginationLinks = [];
-        const ellipsis = "...";
+	const totalPage = useMemo(
+		() => Math.ceil(filteredNumbersData.length / rowPerPage),
+		[filteredNumbersData.length, rowPerPage],
+	);
 
-        if (totalPage <= 7) {
-            for (let i = 1; i <= totalPage; i++) {
-                paginationLinks.push(i);
-            }
-        } else {
-            if (currentPage <= 4) {
-                for (let i = 1; i <= 5; i++) {
-                    paginationLinks.push(i);
-                }
-                paginationLinks.push(ellipsis);
-                paginationLinks.push(totalPage);
-            } else if (currentPage >= totalPage - 3) {
-                paginationLinks.push(1);
-                paginationLinks.push(ellipsis);
-                for (let i = totalPage - 4; i <= totalPage; i++) {
-                    paginationLinks.push(i);
-                }
-            } else {
-                paginationLinks.push(1);
-                paginationLinks.push(ellipsis);
+	const generatePaginationLinks = () => {
+		const paginationLinks = [];
+		const ellipsis = "...";
 
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    paginationLinks.push(i);
-                }
+		if (totalPage <= 7) {
+			for (let i = 1; i <= totalPage; i++) {
+				paginationLinks.push(i);
+			}
+		} else {
+			if (currentPage <= 4) {
+				for (let i = 1; i <= 5; i++) {
+					paginationLinks.push(i);
+				}
+				paginationLinks.push(ellipsis);
+				paginationLinks.push(totalPage);
+			} else if (currentPage >= totalPage - 3) {
+				paginationLinks.push(1);
+				paginationLinks.push(ellipsis);
+				for (let i = totalPage - 4; i <= totalPage; i++) {
+					paginationLinks.push(i);
+				}
+			} else {
+				paginationLinks.push(1);
+				paginationLinks.push(ellipsis);
 
-                paginationLinks.push(ellipsis);
-                paginationLinks.push(totalPage);
-            }
-        }
+				for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+					paginationLinks.push(i);
+				}
 
-        return paginationLinks;
-    };
+				paginationLinks.push(ellipsis);
+				paginationLinks.push(totalPage);
+			}
+		}
 
-    const getnumbersData = async () => {
-        const dummyData = [{
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 300,
-            status: 'Activated',
-            lastPaymentMade: 890
-        }, {
-            name: 'Hamza Ali',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 340,
-            status: 'Pending',
-            lastPaymentMade: 460
-        }, {
-            name: 'Atif Rana',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 426,
-            status: 'Pending',
-            lastPaymentMade: 230
-        }, {
-            name: 'Muhammad Ahmed',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 120,
-            status: 'Activated',
-            lastPaymentMade: 340
-        }, {
-            name: 'Mehmood Khan',
-            number: '+12363758568',
-            purchaseDate: '12/06/2022',
-            expireDate: '06/08/2023',
-            currentBalance: 180,
-            status: 'Pending',
-            lastPaymentMade: 450
-        }];
-        try {
-            setNumbersData(dummyData);
-        } catch (error) {
-            console.error('Error fetching leads modules : ', error);
-        }
-    };
+		return paginationLinks;
+	};
 
-    const nextPage = () => {
-        const startIndex = rowPerPage * (currentPage + 1);
-        const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
-        setRowsToShow(newArray);
-        setCurrentPage(currentPage + 1);
-    };
+	const getnumbersData = async () => {
+		const dummyData = [
+			{
+				number: "+12363758568",
+				purchaseDate: "12/06/2022",
+				expireDate: "06/08/2023",
+				currentBalance: 300,
+				status: "Activated",
+				lastPaymentMade: 890,
+			},
+			{
+				name: "Hamza Ali",
+				number: "+12363758568",
+				purchaseDate: "12/06/2022",
+				expireDate: "06/08/2023",
+				currentBalance: 340,
+				status: "Pending",
+				lastPaymentMade: 460,
+			},
+			{
+				name: "Atif Rana",
+				number: "+12363758568",
+				purchaseDate: "12/06/2022",
+				expireDate: "06/08/2023",
+				currentBalance: 426,
+				status: "Pending",
+				lastPaymentMade: 230,
+			},
+			{
+				name: "Muhammad Ahmed",
+				number: "+12363758568",
+				purchaseDate: "12/06/2022",
+				expireDate: "06/08/2023",
+				currentBalance: 120,
+				status: "Activated",
+				lastPaymentMade: 340,
+			},
+			{
+				name: "Mehmood Khan",
+				number: "+12363758568",
+				purchaseDate: "12/06/2022",
+				expireDate: "06/08/2023",
+				currentBalance: 180,
+				status: "Pending",
+				lastPaymentMade: 450,
+			},
+		];
+		try {
+			setNumbersData(dummyData);
+		} catch (error) {
+			console.error("Error fetching leads modules : ", error);
+		}
+	};
 
-    const changePage = (value) => {
-        const startIndex = value * rowPerPage;
-        const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
-        setRowsToShow(newArray);
-        setCurrentPage(value);
-    };
+	const nextPage = () => {
+		const startIndex = rowPerPage * (currentPage + 1);
+		const endIndex = startIndex + rowPerPage;
+		const newArray = filteredNumbersData.slice(startIndex, endIndex);
+		setRowsToShow(newArray);
+		setCurrentPage(currentPage + 1);
+	};
 
-    const previousPage = () => {
-        const startIndex = (currentPage - 1) * rowPerPage;
-        const endIndex = startIndex + rowPerPage;
-        const newArray = filteredNumbersData.slice(startIndex, endIndex);
-        setRowsToShow(newArray);
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        } else {
-            setCurrentPage(0);
-        }
-    };
+	const changePage = (value) => {
+		const startIndex = value * rowPerPage;
+		const endIndex = startIndex + rowPerPage;
+		const newArray = filteredNumbersData.slice(startIndex, endIndex);
+		setRowsToShow(newArray);
+		setCurrentPage(value);
+	};
 
-    const [filters, setFilters] = useState({
-        fullName: '',
-        createdTimeFrom: null,
-        createdTimeTo: null,
-        sortOrder: 'asc'
-    });
+	const previousPage = () => {
+		const startIndex = (currentPage - 1) * rowPerPage;
+		const endIndex = startIndex + rowPerPage;
+		const newArray = filteredNumbersData.slice(startIndex, endIndex);
+		setRowsToShow(newArray);
+		if (currentPage > 1) {
+			setCurrentPage(currentPage - 1);
+		} else {
+			setCurrentPage(0);
+		}
+	};
 
-    const resetFilterData = () => {
-        setFilters({
-            fullName: '',
-            createdTimeFrom: null,
-            createdTimeTo: null,
-            sortOrder: 'asc'
-        });
-    }
+	const [filters, setFilters] = useState({
+		fullName: "",
+		createdTimeFrom: null,
+		createdTimeTo: null,
+		sortOrder: "asc",
+	});
 
-    const applyFilters = () => {
-        let filtered = numbersData;
+	const resetFilterData = () => {
+		setFilters({
+			fullName: "",
+			createdTimeFrom: null,
+			createdTimeTo: null,
+			sortOrder: "asc",
+		});
+	};
 
-        if (filters.fullName) {
-            filtered = filtered.filter(item => item.Full_Name.toLowerCase().includes(filters.fullName.toLowerCase()));
-        }
+	const applyFilters = () => {
+		let filtered = numbersData;
 
-        if (filters.createdTimeFrom) {
-            filtered = filtered.filter(item => new Date(item.Created_Time) >= new Date(filters.createdTimeFrom));
-        }
+		if (filters.fullName) {
+			filtered = filtered.filter((item) =>
+				item.Full_Name.toLowerCase().includes(filters.fullName.toLowerCase()),
+			);
+		}
 
-        if (filters.createdTimeTo) {
-            filtered = filtered.filter(item => new Date(item.Created_Time) <= new Date(filters.createdTimeTo));
-        }
+		if (filters.createdTimeFrom) {
+			filtered = filtered.filter(
+				(item) =>
+					new Date(item.Created_Time) >= new Date(filters.createdTimeFrom),
+			);
+		}
 
-        filtered.sort((a, b) => {
-            const dateA = new Date(a.Created_Time);
-            const dateB = new Date(b.Created_Time);
-            return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-        });
+		if (filters.createdTimeTo) {
+			filtered = filtered.filter(
+				(item) =>
+					new Date(item.Created_Time) <= new Date(filters.createdTimeTo),
+			);
+		}
 
-        setFilteredNumbersData(filtered);
-    };
+		filtered.sort((a, b) => {
+			const dateA = new Date(a.Created_Time);
+			const dateB = new Date(b.Created_Time);
+			return filters.sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+		});
 
-    const handleFilterChange = (event) => {
-        const { name, value } = event.target;
-        setFilters(prevFilters => ({
-            ...prevFilters,
-            [name]: value
-        }));
-    };
+		setFilteredNumbersData(filtered);
+	};
 
-    const handleDateChange = (name, date) => {
-        setFilters(prevFilters => ({
-            ...prevFilters,
-            [name]: date
-        }));
-    };
+	const handleFilterChange = (event) => {
+		const { name, value } = event.target;
+		setFilters((prevFilters) => ({
+			...prevFilters,
+			[name]: value,
+		}));
+	};
 
-    const handleSortOrderChange = (event) => {
-        setFilters(prevFilters => ({
-            ...prevFilters,
-            sortOrder: event.target.value
-        }));
-    };
+	const handleDateChange = (name, date) => {
+		setFilters((prevFilters) => ({
+			...prevFilters,
+			[name]: date,
+		}));
+	};
 
-    useEffect(() => {
-        applyFilters();
-    }, [filters, numbersData]);
+	const handleSortOrderChange = (event) => {
+		setFilters((prevFilters) => ({
+			...prevFilters,
+			sortOrder: event.target.value,
+		}));
+	};
 
-    return (
-        <>
-            <div className='w-full flex flex-row justify-between items-center mb-8'>
-                <h1 className="text-black text-xl font-bold">Payments</h1>
-            </div>
+	useEffect(() => {
+		applyFilters();
+	}, [filters, numbersData]);
 
-            <div className='w-full flex flex-col justify-center items-center'>
-                <div className='w-full h-16 flex flex-row justify-end items-center rounded-t-lg pr-10 bg-[#340068]'>
-                    <div onClick={showFilters} className="flex flex-row justify-end items-center gap-3 font-semibold text-base text-white cursor-pointer" >
-                        <button> Filter </button>
-                        <TuneIcon />
-                    </div>
-                </div>
-            </div>
+	return (
+		<>
+			<div className="w-full flex flex-row justify-between items-center mb-8">
+				<h1 className="text-black text-xl font-bold">Payments</h1>
+				<div className="flex justify-between items-center">
+					<button
+						onClick={handleOpenModal}
+						className="bg-[#FF6978] rounded-3xl text-white py-1 px-4 mr-4"
+					>
+						Set Charges
+					</button>
+					<button
+						onClick={handleOpenApiModal}
+						className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
+					>
+						Set Api Key
+					</button>
+				</div>
+			</div>
 
-            {showOrHideFilters === true ? (
-                <>
-                    {/* <div className='w-full flex flex-col lg:flex-row justify-evenly items-center px-4 pt-4 gap-2'>
+			<div className="w-full flex flex-col justify-center items-center">
+				<div className="w-full h-16 flex flex-row justify-end items-center rounded-t-lg pr-10 bg-[#340068]">
+					<div
+						onClick={showFilters}
+						className="flex flex-row justify-end items-center gap-3 font-semibold text-base text-white cursor-pointer"
+					>
+						<button> Filter </button>
+						<TuneIcon />
+					</div>
+				</div>
+			</div>
+
+			{showOrHideFilters === true ? (
+				<>
+					{/* <div className='w-full flex flex-col lg:flex-row justify-evenly items-center px-4 pt-4 gap-2'>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <TextField
                                 label="Full Name"
@@ -294,261 +338,299 @@ const PaymentsTable = () => {
                             </div>
                         </LocalizationProvider>
                     </div> */}
-                </>
-            ) : (
-                <>
-                </>
-            )}
+				</>
+			) : (
+				<></>
+			)}
 
-            <div className="h-full bg-white flex items-center justify-center py-4">
-                <div className="w-full px-2">
+			<div className="h-full bg-white flex items-center justify-center py-4">
+				<div className="w-full px-2">
+					<div className="w-full overflow-x-scroll md:overflow-auto max-w-7xl 2xl:max-w-none mt-2 ">
+						<table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border ">
+							<thead className="rounded-lg text-base text-white font-semibold w-full border-t-2 border-gray-300 pt-6 pb-6">
+								<tr>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Purchase Date
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Expiration Date
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Current Balance
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Status
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										Last Payment Made
+									</th>
+								</tr>
+							</thead>
 
-                    <div className="w-full overflow-x-scroll md:overflow-auto max-w-7xl 2xl:max-w-none mt-2 ">
-                        <table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border ">
-                            <thead className="rounded-lg text-base text-white font-semibold w-full border-t-2 border-gray-300 pt-6 pb-6">
-                                <tr>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Number
-                                    </th>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Purchase Date
-                                    </th>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Expiration Date
-                                    </th>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Current Balance
-                                    </th>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Status
-                                    </th>
-                                    <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-                                        Last Payment Made
-                                    </th>
-                                </tr>
-                            </thead>
+							<tbody>
+								{rowsToShow?.map((data, index) => (
+									<tr
+										className={`${
+											index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
+										}`}
+										key={index}
+									>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.number ? (
+												<div> - </div>
+											) : (
+												<div>{data.number}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.purchaseDate ? (
+												<div> - </div>
+											) : (
+												<div>{data.purchaseDate}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.expireDate ? (
+												<div> - </div>
+											) : (
+												<div>{data.expireDate}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.currentBalance ? (
+												<div> - </div>
+											) : (
+												<div className="pl-2"> ${data.currentBalance}</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 text-base  font-normal ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{data?.status && data?.status === "Activated" && (
+												<div className="w-full flex flex-row justify-start items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#4CE13F", fontSize: 16 }}
+													/>
+													<h1> {data.status} </h1>
+												</div>
+											)}
+											{data?.status && data?.status === "Pending" && (
+												<div className="w-full flex flex-row justify-start items-center gap-2">
+													<FiberManualRecordIcon
+														sx={{ color: "#C70000", fontSize: 16 }}
+													/>
+													<h1 className="pr-4"> {data.status} </h1>
+												</div>
+											)}
+										</td>
+										<td
+											className={`py-2 px-3 font-normal text-base ${
+												index == 0
+													? "border-t-2 border-gray-300"
+													: index == rowsToShow?.length
+														? "border-y"
+														: "border-t"
+											} whitespace-nowrap`}
+										>
+											{!data?.lastPaymentMade ? (
+												<div> - </div>
+											) : (
+												<div className="pl-2">${data.lastPaymentMade}</div>
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+						<BillingChargesModal
+							open={openModal}
+							handleClose={handleCloseModal}
+						/>
 
-                            <tbody>
-                                {rowsToShow && rowsToShow?.map((data, index) => (
-                                    <tr
-                                        className={`${index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
-                                            }`}
-                                        key={index}
-                                    >
-                                        <td
-                                            className={`py-2 px-3 font-normal text-base ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {!data?.number ? <div> - </div> : <div>{data.number}</div>}
-                                        </td>
-                                        <td
-                                            className={`py-2 px-3 font-normal text-base ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {!data?.purchaseDate ? <div> - </div> : <div>{data.purchaseDate}</div>}
-                                        </td>
-                                        <td
-                                            className={`py-2 px-3 font-normal text-base ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {!data?.expireDate ? <div> - </div> : <div>{data.expireDate}</div>}
-                                        </td>
-                                        <td
-                                            className={`py-2 px-3 font-normal text-base ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {!data?.currentBalance ? <div> - </div> : <div className="pl-2" > ${data.currentBalance}</div>}
-                                        </td>
-                                        <td
-                                            className={`py-2 px-3 text-base  font-normal ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {data?.status && data?.status === 'Activated' && (
-                                                <div className="w-full flex flex-row justify-start items-center gap-2" >
-                                                    < FiberManualRecordIcon sx={{ color: '#4CE13F', fontSize: 16 }} />
-                                                    <h1> {data.status} </h1>
-                                                </div>
-                                            )}
-                                            {data?.status && data?.status === 'Pending' && (
-                                                <div className="w-full flex flex-row justify-start items-center gap-2" >
-                                                    < FiberManualRecordIcon sx={{ color: '#C70000', fontSize: 16 }} />
-                                                    <h1 className="pr-4" > {data.status} </h1>
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td
-                                            className={`py-2 px-3 font-normal text-base ${index == 0
-                                                ? "border-t-2 border-gray-300"
-                                                : index == rowsToShow?.length
-                                                    ? "border-y"
-                                                    : "border-t"
-                                                } whitespace-nowrap`}
-                                        >
-                                            {!data?.lastPaymentMade ? <div> - </div> : <div className="pl-2" >${data.lastPaymentMade}</div>}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+						<ApiKeyModal
+							open={openApiModal}
+							handleClose={handleCloseApiModal}
+						/>
+					</div>
 
-                    <div className="w-full flex justify-center sm:justify-between xl:flex-row flex-col gap-10 mt-12 lg:mt-8 px-0 lg:px-4 xl:px-4 items-center">
-                        <div className="text-base text-center">
-                            Showing
-                            <span className="font-bold bg-[#FF6978] text-white mx-2 p-2 text-center rounded-lg">
-                                {currentPage === 0 ? 1 : currentPage * rowPerPage + 1}
-                            </span>
-                            to{" "}
-                            <span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
-                                {currentPage === totalPage - 1
-                                    ? numbersData?.length
-                                    : (currentPage + 1) * rowPerPage}
-                            </span>{" "}
-                            of{" "}
-                            <span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
-                                {numbersData?.length}
-                            </span>{" "}
-                            entries
-                        </div>
+					<div className="w-full flex justify-center sm:justify-between xl:flex-row flex-col gap-10 mt-12 lg:mt-8 px-0 lg:px-4 xl:px-4 items-center">
+						<div className="text-base text-center">
+							Showing
+							<span className="font-bold bg-[#FF6978] text-white mx-2 p-2 text-center rounded-lg">
+								{currentPage === 0 ? 1 : currentPage * rowPerPage + 1}
+							</span>
+							to{" "}
+							<span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
+								{currentPage === totalPage - 1
+									? numbersData?.length
+									: (currentPage + 1) * rowPerPage}
+							</span>{" "}
+							of{" "}
+							<span className="font-bold bg-[#FF6978] text-white mx-2 py-2 px-3 text-center rounded-lg">
+								{numbersData?.length}
+							</span>{" "}
+							entries
+						</div>
 
-                        <div className="flex flex-row justify-center items-center gap-4" >
-                            <div> Rows Per Page </div>
-                            <Box sx={{ width: 200 }}>
-                                <FormControl fullWidth>
-                                    <Select
-                                        id="rows-per-page"
-                                        value={rowPerPage}
-                                        onChange={handleRowPerPageChange}
-                                        sx={{
-                                            height: 40,
-                                            backgroundColor: '#FF6978',
-                                            color: 'white',
-                                            borderRadius: '8px',
-                                            '.MuiOutlinedInput-notchedOutline': {
-                                                borderColor: 'transparent',
-                                            },
-                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: 'transparent',
-                                            },
-                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: 'transparent',
-                                            },
-                                            '.MuiSelect-icon': {
-                                                color: 'white',
-                                            },
-                                            '& .MuiSelect-select': {
-                                                borderRadius: '8px',
-                                            },
-                                            '& .MuiListItem-root': {
-                                                '&:hover': {
-                                                    backgroundColor: 'white',
-                                                    color: 'black',
-                                                },
-                                            },
-                                            '& .Mui-selected': {
-                                                backgroundColor: 'white',
-                                                color: 'black',
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem value={5}>5</MenuItem>
-                                        <MenuItem value={10}>10</MenuItem>
-                                        <MenuItem value={15}>15</MenuItem>
-                                        <MenuItem value={20}>20</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                        </div>
+						<div className="flex flex-row justify-center items-center gap-4">
+							<div> Rows Per Page </div>
+							<Box sx={{ width: 200 }}>
+								<FormControl fullWidth>
+									<Select
+										id="rows-per-page"
+										value={rowPerPage}
+										onChange={handleRowPerPageChange}
+										sx={{
+											height: 40,
+											backgroundColor: "#FF6978",
+											color: "white",
+											borderRadius: "8px",
+											".MuiOutlinedInput-notchedOutline": {
+												borderColor: "transparent",
+											},
+											"&:hover .MuiOutlinedInput-notchedOutline": {
+												borderColor: "transparent",
+											},
+											"&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+												borderColor: "transparent",
+											},
+											".MuiSelect-icon": {
+												color: "white",
+											},
+											"& .MuiSelect-select": {
+												borderRadius: "8px",
+											},
+											"& .MuiListItem-root": {
+												"&:hover": {
+													backgroundColor: "white",
+													color: "black",
+												},
+											},
+											"& .Mui-selected": {
+												backgroundColor: "white",
+												color: "black",
+											},
+										}}
+									>
+										<MenuItem value={5}>5</MenuItem>
+										<MenuItem value={10}>10</MenuItem>
+										<MenuItem value={15}>15</MenuItem>
+										<MenuItem value={20}>20</MenuItem>
+									</Select>
+								</FormControl>
+							</Box>
+						</div>
 
-                        <div className="flex">
-                            <ul
-                                className="flex justify-center items-center gap-x-[10px] z-30"
-                                role="navigation"
-                                aria-label="Pagination"
-                            >
-                                <li
-                                    className={` prev-btn flex items-center justify-center w-[36px] rounded-[6px] h-[36px] border-[1px] border-solid border-[#E4E4EB] disabled] ${currentPage == 0
-                                        ? "bg-[#cccccc] pointer-events-none"
-                                        : " cursor-pointer"
-                                        }`}
-                                    onClick={previousPage}
-                                >
-                                    <img src="https://www.tailwindtap.com/assets/travelagency-admin/leftarrow.svg" />
-                                </li>
+						<div className="flex">
+							<ul
+								className="flex justify-center items-center gap-x-[10px] z-30"
+								role="navigation"
+								aria-label="Pagination"
+							>
+								<li
+									className={` prev-btn flex items-center justify-center w-[36px] rounded-[6px] h-[36px] border-[1px] border-solid border-[#E4E4EB] disabled] ${
+										currentPage == 0
+											? "bg-[#cccccc] pointer-events-none"
+											: " cursor-pointer"
+									}`}
+									onClick={previousPage}
+								>
+									<img src="https://www.tailwindtap.com/assets/travelagency-admin/leftarrow.svg" />
+								</li>
 
-                                {generatePaginationLinks().map((item, index) => (
-                                    <li
-                                        key={index}
-                                        onClick={() => changePage(item - 1)}
-                                        className={`flex items-center justify-center w-[36px] rounded-[6px] h-[34px] border-solid border-[2px] cursor-pointer ${currentPage === item - 1
-                                            ? "text-white bg-[#FF6978]"
-                                            : "border-[#E4E4EB]"
-                                            }`}
-                                    >
-                                        <span aria-hidden="true">{item}</span>
-                                    </li>
-                                ))}
+								{generatePaginationLinks().map((item, index) => (
+									<li
+										key={index}
+										onClick={() => changePage(item - 1)}
+										className={`flex items-center justify-center w-[36px] rounded-[6px] h-[34px] border-solid border-[2px] cursor-pointer ${
+											currentPage === item - 1
+												? "text-white bg-[#FF6978]"
+												: "border-[#E4E4EB]"
+										}`}
+									>
+										<span aria-hidden="true">{item}</span>
+									</li>
+								))}
 
-                                <li
-                                    className={`flex items-center justify-center w-[36px] rounded-[6px] h-[36px] border-[1px] border-solid border-[#E4E4EB] ${currentPage == totalPage - 1
-                                        ? "bg-[#cccccc] pointer-events-none"
-                                        : " cursor-pointer"
-                                        }`}
-                                    onClick={nextPage}
-                                >
-                                    <img src="https://www.tailwindtap.com/assets/travelagency-admin/rightarrow.svg" />
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+								<li
+									className={`flex items-center justify-center w-[36px] rounded-[6px] h-[36px] border-[1px] border-solid border-[#E4E4EB] ${
+										currentPage == totalPage - 1
+											? "bg-[#cccccc] pointer-events-none"
+											: " cursor-pointer"
+									}`}
+									onClick={nextPage}
+								>
+									<img src="https://www.tailwindtap.com/assets/travelagency-admin/rightarrow.svg" />
+								</li>
+							</ul>
+						</div>
+					</div>
 
-                    <Modal
-                        open={openExtendExpirationDate}
-                        onClose={handleCloseExtendExpirationDate}
-                        aria-describedby="modal-data"
-                    >
-                        <Box sx={style}>
+					<Modal
+						open={openExtendExpirationDate}
+						onClose={handleCloseExtendExpirationDate}
+						aria-describedby="modal-data"
+					>
+						<Box sx={style}>
+							<div
+								id="modal-data"
+								className="w-full h-full flex flex-col justify-start items-center gap-3"
+							>
+								<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5">
+									<h2 className="text-xl font-bold"> Payment Method </h2>
+								</div>
 
-                            <div id="modal-data" className="w-full h-full flex flex-col justify-start items-center gap-3" >
-
-                                <div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5" >
-                                    <h2 className="text-xl font-bold"> Payment Method </h2>
-                                </div>
-
-                                <div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5" >
-                                    <div className="flex flex-col justify-start items-start gap-2">
-
-                                    </div>
-                                </div>
-                            </div>
-
-                        </Box>
-                    </Modal>
-
-                </div>
-            </div>
-        </>
-    );
+								<div className="w-full h-full flex flex-col lg:flex-row xl:flex-row justify-center items-center gap-5">
+									<div className="flex flex-col justify-start items-start gap-2"></div>
+								</div>
+							</div>
+						</Box>
+					</Modal>
+				</div>
+			</div>
+		</>
+	);
 };
 
 export default PaymentsTable;

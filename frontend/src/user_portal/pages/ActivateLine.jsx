@@ -27,10 +27,10 @@ import {
 } from "../../../utils/calculateCharge";
 const ActivateLine = () => {
 	dayjs.extend(utc);
-	const Today = dayjs().startOf("day");
+	const Today = dayjs().tz("Asia/Jerusalem");
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(Today);
-	const [endDate, setEndDate] = useState(null);
+	const [endDate, setEndDate] = useState(dayjs());
 	const [simNumberState, setSimNumberState] = useState(true);
 	const [datePickerState, setDatePickerState] = useState(false);
 	const [displayNumbers, setDisplayNumbers] = useState(false);
@@ -88,7 +88,7 @@ const ActivateLine = () => {
 		const userData = userDoc.data();
 		const currentBalance = userData.balance || 0;
 		console.log("balance", currentBalance);
-		const charge = calculateCharges(new Date(startDateZ), new Date(endDateZ));
+		const charge = await calculateCharges(startDate, endDate);
 		console.log("charge", charge);
 
 		if (!hasSufficientBalance(currentBalance, charge)) {
@@ -178,36 +178,43 @@ const ActivateLine = () => {
 		}
 	};
 	useEffect(() => {
-		if (startDate && endDate) {
-			const charge = calculateCharges(new Date(startDate), new Date(endDate));
-			setCharges(charge);
-		}
+		const fetchCharges = async () => {
+			try {
+				const chargeAmount = await calculateCharges(startDate, endDate);
+				setCharges(chargeAmount);
+			} catch (err) {
+				toast.error("Failed to get Charges");
+			} finally {
+			}
+		};
+
+		fetchCharges();
 	}, [startDate, endDate]);
 
 	const handleConfirmDates = async () => {
 		if (startDate && endDate) {
 			// Get current time
-			const currentTime = dayjs();
+			// const currentTime = dayjs();
 
-			// Add current time to startDate and endDate
-			const startDateTime = dayjs(startDate)
-				.hour(currentTime.hour())
-				.minute(currentTime.minute())
-				.second(currentTime.second())
-				.utc(); // Convert to UTC
+			// // Add current time to startDate and endDate
+			// const startDateTime = dayjs(startDate)
+			// 	.hour(currentTime.hour())
+			// 	.minute(currentTime.minute())
+			// 	.second(currentTime.second())
+			// 	.utc(); // Convert to UTC
 
-			const endDateTime = dayjs(endDate)
-				.hour(currentTime.hour())
-				.minute(currentTime.minute())
-				.second(currentTime.second())
-				.utc(); // Convert to UTC
+			// const endDateTime = dayjs(endDate)
+			// 	.hour(currentTime.hour())
+			// 	.minute(currentTime.minute())
+			// 	.second(currentTime.second())
+			// 	.utc(); // Convert to UTC
 
-			// Format to ISO string with 'Z' suffix
-			const startDateTimeZ = startDateTime.toISOString();
-			const endDateTimeZ = endDateTime.toISOString();
+			// // Format to ISO string with 'Z' suffix
+			// const startDateTimeZ = startDateTime.toISOString();
+			// const endDateTimeZ = endDateTime.toISOString();
 
-			setStartDate(startDateTimeZ);
-			setEndDate(endDateTimeZ);
+			// setStartDate(startDateTimeZ);
+			// setEndDate(endDateTimeZ);
 
 			// Log the date and time
 			// console.log("Start Date and Time in UTC: ", startDateTimeZ);
@@ -221,6 +228,10 @@ const ActivateLine = () => {
 			// 	endDateTime.format("YYYY-MM-DD HH:mm:ss"),
 			// );
 
+			const startDateTimeZ = dayjs(startDate)
+				.tz("Asia/Jerusalem")
+				.toISOString();
+			const endDateTimeZ = dayjs(endDate).tz("Asia/Jerusalem").toISOString();
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
@@ -288,26 +299,63 @@ const ActivateLine = () => {
 						<div className="w-full flex flex-row justify-start items-start gap-4">
 							<h1 className="font-semibold">
 								Start Date:{" "}
-								{startDate ? dayjs(startDate).format("YYYY-MM-DD") : ""}
+								{startDate
+									? dayjs(startDate)
+											.tz("Asia/Jerusalem")
+											.startOf("day") // Start of the day (00:00) in Israel timezone
+											.format("YYYY-MM-DD HH:MM")
+									: ""}
 							</h1>
 							<h1 className="font-semibold">
-								End Date: {endDate ? dayjs(endDate).format("YYYY-MM-DD") : ""}
+								End Date:{" "}
+								{endDate
+									? dayjs(endDate)
+											.tz("Asia/Jerusalem")
+											.endOf("day") // End of the day (23:59) in Israel timezone
+											.format("YYYY-MM-DD HH:MM")
+									: ""}
 							</h1>
 						</div>
+
 						<div className="w-full flex lg:flex-row flex-col justify-center items-center gap-2 border border-gray-300 pt-8">
 							{/* Start Date */}
 							<LocalizationProvider dateAdapter={AdapterDayjs}>
 								<DateCalendar
-									value={startDate}
-									onChange={(newValue) => setStartDate(newValue)}
+									value={dayjs(startDate)}
+									onChange={(newValue) => {
+										if (newValue) {
+											// Set the time to the start of the day in Israel timezone
+											const startOfDay = dayjs(newValue)
+												.tz("Asia/Jerusalem")
+												.set("hour", 0)
+												.set("minute", 0)
+												.set("second", 1);
+											console.log("date", startOfDay);
+
+											setStartDate(startOfDay.toDate()); // Save the date object
+										}
+									}}
 									minDate={Today}
 								/>
 							</LocalizationProvider>
+
 							{/* End Date */}
 							<LocalizationProvider dateAdapter={AdapterDayjs}>
 								<DateCalendar
-									value={endDate}
-									onChange={(newValue) => setEndDate(newValue)}
+									value={dayjs(endDate)}
+									onChange={(newValue) => {
+										if (newValue) {
+											// Set the time to 11:59 PM in Israel timezone
+											const endOfDay = dayjs(newValue)
+												.tz("Asia/Jerusalem")
+												.set("hour", 23)
+												.set("minute", 59)
+												.set("second", 0); // Set to 23:59:00
+											console.log("end", endOfDay);
+											console.log(endOfDay.toDate());
+											setEndDate(endOfDay.toDate()); // Save the date object
+										}
+									}}
 								/>
 							</LocalizationProvider>
 						</div>
@@ -332,9 +380,15 @@ const ActivateLine = () => {
 				{displayNumbers && (
 					<>
 						<h1 className="w-full text-xl font-bold text-center text-black my-3">
-							Your Line has been activated and the expiration date is: End Date:{" "}
-							{endDate ? dayjs(endDate).format("YYYY-MM-DD") : ""}
+							Your Line has been activated and the expiration date is:{" "}
+							{endDate
+								? dayjs(endDate)
+										.tz("Asia/Jerusalem")
+										.endOf("day") // Ensure the time is set to 23:59 in Israel timezone
+										.format("YYYY-MM-DD HH:mm")
+								: ""}
 						</h1>
+
 						<h1 className="w-full text-lg font-bold text-center text-black">
 							Your New Phone Number
 						</h1>

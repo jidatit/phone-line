@@ -74,9 +74,10 @@ const PaymentModal = ({ open, handleClose }) => {
 					await updateDoc(userDocRef, {
 						balance: updatedBalance,
 					});
-
-					handleClose();
 					toast.success("Payment successful!");
+					setTimeout(() => {
+						handleClose();
+					}, 1000);
 				} else {
 					toast.error("User document not found.");
 				}
