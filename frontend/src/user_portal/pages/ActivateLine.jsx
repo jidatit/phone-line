@@ -301,7 +301,7 @@ const ActivateLine = () => {
 								Start Date:{" "}
 								{startDate
 									? dayjs(startDate)
-											.tz("Asia/Jerusalem")
+
 											.startOf("day") // Start of the day (00:00) in Israel timezone
 											.format("YYYY-MM-DD HH:MM")
 									: ""}
@@ -310,7 +310,7 @@ const ActivateLine = () => {
 								End Date:{" "}
 								{endDate
 									? dayjs(endDate)
-											.tz("Asia/Jerusalem")
+
 											.endOf("day") // End of the day (23:59) in Israel timezone
 											.format("YYYY-MM-DD HH:MM")
 									: ""}
@@ -327,15 +327,18 @@ const ActivateLine = () => {
 											// Set the time to the start of the day in Israel timezone
 											const startOfDay = dayjs(newValue)
 												.tz("Asia/Jerusalem")
-												.set("hour", 0)
-												.set("minute", 0)
-												.set("second", 1);
+												.startOf("day");
 											console.log("date", startOfDay);
 
 											setStartDate(startOfDay.toDate()); // Save the date object
+
+											// Ensure end date is not before the new start date
+											if (dayjs(endDate).isBefore(startOfDay)) {
+												setEndDate(startOfDay.add(1, "day").toDate()); // Default end date to a day after the new start date
+											}
 										}
 									}}
-									minDate={Today}
+									minDate={dayjs().startOf("day")}
 								/>
 							</LocalizationProvider>
 
@@ -348,14 +351,13 @@ const ActivateLine = () => {
 											// Set the time to 11:59 PM in Israel timezone
 											const endOfDay = dayjs(newValue)
 												.tz("Asia/Jerusalem")
-												.set("hour", 23)
-												.set("minute", 59)
-												.set("second", 0); // Set to 23:59:00
+												.endOf("day");
 											console.log("end", endOfDay);
 											console.log(endOfDay.toDate());
 											setEndDate(endOfDay.toDate()); // Save the date object
 										}
 									}}
+									minDate={dayjs(startDate).add(1, "day")} // Ensure the end date is always after the start date
 								/>
 							</LocalizationProvider>
 						</div>
@@ -383,7 +385,7 @@ const ActivateLine = () => {
 							Your Line has been activated and the expiration date is:{" "}
 							{endDate
 								? dayjs(endDate)
-										.tz("Asia/Jerusalem")
+
 										.endOf("day") // Ensure the time is set to 23:59 in Israel timezone
 										.format("YYYY-MM-DD HH:mm")
 								: ""}

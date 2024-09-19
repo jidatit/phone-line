@@ -406,16 +406,12 @@ const ReportsTable = () => {
 										</td>
 										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
 											{data.startDate
-												? dayjs(data.startDate)
-														.tz("Asia/Jerusalem")
-														.format("YYYY-MM-DD")
+												? dayjs(data.startDate).format("YYYY-MM-DD")
 												: "-"}
 										</td>
 										<td className="py-2 px-3 font-normal text-base border-t-2 border-gray-300 whitespace-nowrap">
 											{data.endDate
-												? dayjs(data.endDate)
-														.tz("Asia/Jerusalem")
-														.format("YYYY-MM-DD")
+												? dayjs(data.endDate).format("YYYY-MM-DD")
 												: "-"}
 										</td>
 										<td className="py-2 px-3 text-base font-normal border-t-2 border-gray-300 whitespace-nowrap">

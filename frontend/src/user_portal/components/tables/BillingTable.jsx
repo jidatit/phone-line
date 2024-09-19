@@ -12,7 +12,7 @@ import { Timestamp } from "firebase/firestore"; // Ensure Timestamp is imported 
 import { db } from "../../../../Firebase";
 import { useAuth } from "../../../../AuthContext";
 import { ToastContainer } from "react-toastify";
-
+import dayjs from "dayjs";
 const style = {
 	position: "absolute",
 	top: "50%",
@@ -420,7 +420,10 @@ const ReportsTable = () => {
 												{!data?.purchaseDate ? (
 													<div> - </div>
 												) : (
-													<div>{data.purchaseDate}</div>
+													<div>
+														{" "}
+														{dayjs(data.purchaseDate).format("YYYY-MM-DD")}
+													</div>
 												)}
 											</td>
 											<td
@@ -435,7 +438,9 @@ const ReportsTable = () => {
 												{!data?.expireDate ? (
 													<div> - </div>
 												) : (
-													<div>{data.expireDate}</div>
+													<div>
+														{dayjs(data.expireDate).format("YYYY-MM-DD")}
+													</div>
 												)}
 											</td>
 

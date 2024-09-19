@@ -123,7 +123,6 @@ const ExtendExpirationDateModal = ({ open, onClose, userId, simNumber }) => {
 					// Check if there is sufficient balance
 					if (!hasSufficientBalance(currentBalance, charge)) {
 						toast.error("Insufficient balance for SIM activation");
-						// Assuming handleReset is defined elsewhere to reset the state
 						return;
 					}
 
@@ -131,22 +130,42 @@ const ExtendExpirationDateModal = ({ open, onClose, userId, simNumber }) => {
 					const types = ["IL", "US"];
 					const updateData = {};
 
-					// Build the update object
+					// Check for deactivation status only once
+					let isDeactivated = false;
+
 					// biome-ignore lint/complexity/noForEach: <explanation>
 					types.forEach((type) => {
 						const simData = activatedNumbers[simNumber] || {};
 						const typeData = simData[type] || [];
 
-						// Update the endDate for each entry of the type
-						const updatedTypeData = typeData.map((entry) => ({
-							...entry,
-							endDate: endDateFormatted,
-						}));
+						// Check if the SIM is deactivated
+						if (
+							!isDeactivated &&
+							typeData.some((entry) => entry.Activated === "Deactivated")
+						) {
+							isDeactivated = true;
+							toast.error(
+								"This number is deactivated. You need to activate it again to extend the date.",
+							);
+							return;
+						}
 
-						// Set the path for the update
-						updateData[`activatedNumbers.${simNumber}.${type}`] =
-							updatedTypeData;
+						// Only proceed if not deactivated
+						if (!isDeactivated) {
+							// Update the endDate for each entry of the type
+							const updatedTypeData = typeData.map((entry) => ({
+								...entry,
+								endDate: endDateFormatted,
+							}));
+
+							// Set the path for the update
+							updateData[`activatedNumbers.${simNumber}.${type}`] =
+								updatedTypeData;
+						}
 					});
+
+					// If number was deactivated, exit the function
+					if (isDeactivated) return;
 
 					// Apply the updates to the document
 					await updateDoc(userDocRef, updateData);

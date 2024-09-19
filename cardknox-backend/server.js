@@ -389,11 +389,13 @@ app.post("/terminate-user", async (req, res) => {
 						status: "Success",
 						message: "User is terminated successfully and Firebase is updated",
 					});
+					// biome-ignore lint/style/noUselessElse: <explanation>
 				} else {
 					return res
 						.status(404)
 						.json({ status: "Failed", message: "User not found" });
 				}
+				// biome-ignore lint/style/noUselessElse: <explanation>
 			} else {
 				// If updateFirebase is false, skip the Firebase part
 				return res.status(200).json({

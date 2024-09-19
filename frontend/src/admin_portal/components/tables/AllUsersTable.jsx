@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import React, { useState, useMemo, useEffect } from "react";
 import TuneIcon from "@mui/icons-material/Tune";
 import Modal from "@mui/material/Modal";
@@ -14,6 +15,7 @@ import {
 	getDocs,
 	getDoc,
 	updateDoc,
+	Timestamp,
 } from "firebase/firestore";
 import FundsModal from "../AddFundsModal";
 import { db } from "../../../../Firebase";
@@ -136,60 +138,74 @@ const AllUsersTable = () => {
 			const usersCollectionRef = collection(db, "users");
 			const querySnapshot = await getDocs(usersCollectionRef);
 
-			// Mapping Firestore data to match data structure
-			const usersData = querySnapshot.docs.flatMap((doc) => {
+			// Initialize an array to hold the transformed data
+			const usersData = [];
+
+			// Iterate over each user document
+			// biome-ignore lint/complexity/noForEach: <explanation>
+			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				const activatedNumbers = data.activatedNumbers || {}; // Accessing activatedNumbers
+				const activatedNumbers = data.activatedNumbers || {};
 				const uid = doc.id; // Use the document ID as the user ID
 
 				// Iterate over each simNumber in activatedNumbers
-				return Object.entries(activatedNumbers).flatMap(
-					([simNumber, numbersByType]) =>
-						// Iterate over each country (IL, US) and its numbers
-						Object.entries(numbersByType).flatMap(([country, numbers]) => {
-							// Ensure `numbers` is an array before mapping
-							if (Array.isArray(numbers)) {
-								return numbers.map((numberInfo) => {
-									// Handle different date formats for startDate and endDate
-									const purchaseDate = numberInfo.startDate
-										? dayjs(
-												numberInfo.startDate.toDate
-													? numberInfo.startDate.toDate()
-													: numberInfo.startDate,
-											).format("DD/MM/YYYY")
-										: "N/A";
-									const expireDate = numberInfo.endDate
-										? dayjs(
-												numberInfo.endDate.toDate
-													? numberInfo.endDate.toDate()
-													: numberInfo.endDate,
-											).format("DD/MM/YYYY")
-										: "N/A";
+				for (const [simNumber, numbersByType] of Object.entries(
+					activatedNumbers,
+				)) {
+					// Prepare an object to hold both IL and US numbers
+					let rowData = {
+						name: data.name || "Unknown Name", // Replace with actual name field if it exists
+						simNumber: simNumber,
+						ilNumber: null,
+						usNumber: null,
+						startDate: null,
+						endDate: null,
+						status: null,
+						userId: uid,
+						domainUserId: null,
+						currentBalance: data.currentBalance || 0, // Replace with actual balance field if it exists
+					};
 
-									return {
-										name: data.name || "Unknown Name", // Replace with actual name field if it exists
-										number: numberInfo.number,
-										simNumber: simNumber, // Include the simNumber
-										country: country, // Include the country (IL or US)
-										purchaseDate,
-										expireDate,
-										currentBalance: data.currentBalance || 0, // Replace with actual balance field if it exists
-										status: numberInfo.modify ? "Activated" : "Pending",
-										endpointId: numberInfo.endpointId || 0,
-										userId: uid, // Use the document ID as the user ID
-										activated: numberInfo.Activated,
-										domainUserId: numberInfo.domainUserId,
-									};
-								});
-							} else {
-								return []; // Return an empty array if `numbers` is not an array
-							}
-						}),
-				);
+					// Iterate over each country (IL, US) and its numbers
+					for (const [country, numbers] of Object.entries(numbersByType)) {
+						// Ensure numbers is an array before using forEach
+						if (Array.isArray(numbers)) {
+							// biome-ignore lint/complexity/noForEach: <explanation>
+							numbers.forEach((num) => {
+								// Check if num.startDate and num.endDate are Firestore Timestamps
+								const purchaseDate =
+									num.startDate instanceof Timestamp
+										? num.startDate.toDate().toLocaleDateString()
+										: new Date(num.startDate).toLocaleDateString();
+
+								const expireDate =
+									num.endDate instanceof Timestamp
+										? num.endDate.toDate().toLocaleDateString()
+										: new Date(num.endDate).toLocaleDateString();
+
+								// Add the number data to rowData
+								if (country === "IL") {
+									rowData.ilNumber = num.number;
+								} else if (country === "US") {
+									rowData.usNumber = num.number;
+								}
+
+								// Update other common fields
+								rowData.startDate = purchaseDate;
+								rowData.endDate = expireDate;
+								rowData.status = num.Activated;
+								rowData.domainUserId = num.domainUserId;
+							});
+						}
+					}
+
+					// Push the combined row data for this simNumber
+					usersData.push(rowData);
+				}
 			});
 
+			// Set the transformed data to state
 			setAllUsersData(usersData);
-			// console.log("all user", usersData); // Log the updated `usersData`
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
 			toast.error("Error fetching users data");
@@ -538,6 +554,33 @@ const AllUsersTable = () => {
 	// 	return () => clearInterval(intervalId);
 	// }, []);
 
+	const transformData = (data) => {
+		const result = {};
+
+		// biome-ignore lint/complexity/noForEach: <explanation>
+		data.forEach((item) => {
+			if (!result[item.name]) {
+				result[item.name] = [];
+			}
+			result[item.name].push({
+				domainUserId: item.domainUserId,
+				simNumber: item.simNumber,
+				ilNumber: item.ilNumber,
+				usNumber: item.usNumber,
+				startDate: item.startDate,
+				endDate: item.endDate,
+				status: item.status,
+				userId: item.userId,
+			});
+		});
+
+		return result;
+	};
+
+	// Example usage:
+
+	const groupedData = transformData(rowsToShow);
+
 	return (
 		<>
 			<ToastContainer />
@@ -608,14 +651,20 @@ const AllUsersTable = () => {
 			<div className="h-full bg-white flex items-center justify-center py-4">
 				<div className="w-full px-2">
 					<div className="w-full overflow-x-scroll md:overflow-auto max-w-7xl 2xl:max-w-none mt-2 ">
-						<table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border ">
+						<table className="table-auto overflow-scroll md:overflow-auto w-full text-left font-inter border">
 							<thead className="rounded-lg text-base text-white font-semibold w-full border-t-2 border-gray-300 pt-6 pb-6">
 								<tr>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Name
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Number
+										SIM Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										IL Number
+									</th>
+									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
+										US Number
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Purchase Date
@@ -623,214 +672,125 @@ const AllUsersTable = () => {
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Expiration Date
 									</th>
-									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Current Balance
-									</th> */}
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Status
 									</th>
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Mobile Number
-									</th>
-									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
 										Add Funds
 									</th>
-
-									{/* <th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Deactivate Number
-									</th> */}
 									<th className="py-3 px-3 text-[#340068] sm:text-base font-bold whitespace-nowrap">
-										Deactivate Mobile
+										Terminate User
 									</th>
 								</tr>
 							</thead>
-
 							<tbody>
-								{rowsToShow?.map((data, index) => (
-									<tr
-										className={`${
-											index % 2 == 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
-										}`}
-										key={index}
-									>
-										<td
-											className={`py-2 px-3 font-normal text-base ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{!data?.name ? <div> - </div> : <div>{data.name}</div>}
-										</td>
-										<td
-											className={`py-2 px-3 font-normal text-base ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{!data?.number ? (
-												<div> - </div>
-											) : (
-												<div>{data.number}</div>
-											)}
-										</td>
-										<td
-											className={`py-2 px-3 font-normal text-base ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{!data?.purchaseDate ? (
-												<div> - </div>
-											) : (
-												<div>{data.purchaseDate}</div>
-											)}
-										</td>
-										<td
-											className={`py-2 px-3 font-normal text-base ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{!data?.expireDate ? (
-												<div> - </div>
-											) : (
-												<div>{data.expireDate}</div>
-											)}
-										</td>
-										{/* <td
-												className={`py-2 px-3 font-normal text-base ${
-													index == 0
-														? "border-t-2 border-gray-300"
-														: index == rowsToShow?.length
-															? "border-y"
-															: "border-t"
-												} whitespace-nowrap`}
+								{Object.entries(groupedData).map(([name, sims], index) => (
+									<React.Fragment key={name}>
+										{/* Apply alternating background to the entire group */}
+										{sims.map((sim, simIndex) => (
+											<tr
+												key={`${name}-${simIndex}`}
+												className={
+													index % 2 === 0 ? "bg-white" : "bg-[#222E3A]/[6%]"
+												}
 											>
-												{!data?.currentBalance ? (
-													<div> - </div>
-												) : (
-													<div> ${data.currentBalance}</div>
+												{/* Render the name once, on the first row of the group */}
+												{simIndex === 0 && (
+													<td
+														rowSpan={sims.length}
+														className="py-2 px-3 font-bold text-base border-t whitespace-nowrap"
+														// Adjusting the background for the name cell as well
+													>
+														{name || "-"}
+													</td>
 												)}
-											</td> */}
-										<td
-											className={`py-2 px-3 text-base  font-normal ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{data?.activated && data?.activated === "Activated" && (
-												<div className="w-full flex flex-row justify-start items-center gap-2">
-													<FiberManualRecordIcon
-														sx={{ color: "#4CE13F", fontSize: 16 }}
-													/>
-													<h1> {data.activated} </h1>
-												</div>
-											)}
-											{data?.activated && data?.activated === "Deactivated" && (
-												<div className="w-full flex flex-row justify-start items-center gap-2">
-													<FiberManualRecordIcon
-														sx={{ color: "#C70000", fontSize: 16 }}
-													/>
-													<h1 className="pr-4"> {data.activated} </h1>
-												</div>
-											)}
-										</td>
-										<td
-											className={`py-2 px-3 font-normal text-base ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{!data?.simNumber ? (
-												<div> - </div>
-											) : (
-												<div>{data.simNumber}</div>
-											)}
-										</td>
-										<td
-											className={`py-2 px-3 text-base  font-normal ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-											<button
-												onClick={() => {
-													setUserId(data?.userId);
-													handleOpenFundsModal();
-												}}
-												className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
-											>
-												Add Funds
-											</button>
-										</td>
 
-										{/* <td
-											className={`py-2 px-3 text-base  font-normal ${
-												index == 0
-													? "border-t-2 border-gray-300"
-													: index == rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											<button
-												onClick={() => {
-													handleDeactivateNumber(data?.number, data?.userId);
-												}}
-												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
-											>
-												Deactivate Line
-											</button>
-										</td> */}
-										<td
-											className={`py-2 px-3 text-base font-normal ${
-												index === 0
-													? "border-t-2 border-gray-300"
-													: index === rowsToShow?.length
-														? "border-y"
-														: "border-t"
-											} whitespace-nowrap`}
-										>
-											<button
-												type="button"
-												onClick={() => {
-													terminateUser(
-														data?.domainUserId,
-														data?.userId,
-														index,
-														data?.activated,
-													);
-												}}
-												className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
-											>
-												{loadingStates[index]
-													? "Terminating"
-													: "Terminate User"}
-											</button>
-										</td>
-									</tr>
+												{/* Render the rest of the cells */}
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{sim.simNumber || "-"}
+												</td>
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{sim.ilNumber || "-"}
+												</td>
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{sim.usNumber || "-"}
+												</td>
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{dayjs(sim.startDate).format("DD-MM-YYYY") || "-"}
+												</td>
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{dayjs(sim.endDate).format("DD-MM-YYYY") || "-"}
+												</td>
+												<td
+													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
+												>
+													{sim.status === "Activated" ? (
+														<div className="w-full flex flex-row justify-start items-center gap-2">
+															<FiberManualRecordIcon
+																sx={{ color: "#4CE13F", fontSize: 16 }}
+															/>
+															<h1>{sim.status}</h1>
+														</div>
+													) : sim.status === "Deactivated" ? (
+														<div className="w-full flex flex-row justify-start items-center gap-2">
+															<FiberManualRecordIcon
+																sx={{ color: "#C70000", fontSize: 16 }}
+															/>
+															<h1 className="pr-4">{sim.status}</h1>
+														</div>
+													) : (
+														" - "
+													)}
+												</td>
+												{simIndex === 0 && (
+													<>
+														<td
+															rowSpan={sims.length}
+															className="py-2 px-3 text-base font-normal whitespace-nowrap"
+														>
+															<button
+																onClick={() => {
+																	setUserId(sim.userId);
+																	handleOpenFundsModal(true);
+																}}
+																className="bg-[#FF6978] rounded-3xl text-white py-1 px-4"
+															>
+																Add Funds
+															</button>
+														</td>
+													</>
+												)}
+												<td className="py-2 px-3 text-base font-normal whitespace-nowrap">
+													<button
+														type="button"
+														onClick={() => {
+															terminateUser(
+																sim?.domainUserId,
+																sim?.userId,
+																simIndex,
+																sim?.status,
+															);
+														}}
+														className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
+													>
+														{loadingStates[simIndex]
+															? "Terminating"
+															: "Terminate User"}
+													</button>
+												</td>
+											</tr>
+										))}
+									</React.Fragment>
 								))}
 							</tbody>
 						</table>
