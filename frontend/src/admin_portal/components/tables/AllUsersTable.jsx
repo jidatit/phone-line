@@ -484,18 +484,20 @@ const AllUsersTable = () => {
 	// 		toast.error(error.message);
 	// 	}
 	// };
-	const terminateUser = async (domainUserId, userId, index, activated) => {
+	const terminateUser = async (domainUserId, userId, simNumber, activated) => {
 		if (activated === "Deactivated") {
-			toast.error("User is Already terminated");
+			toast.error("User is already terminated");
 			return;
 		}
 		try {
+			// Set loading to true for the specific sim using its simNumber as the key
 			setLoadingStates((prevState) => ({
 				...prevState,
-				[index]: true,
+				[simNumber]: true,
 			}));
+
 			const updateFirebase = true;
-			// Make the API request to the backend endpoint
+			// Make the API request to terminate the user
 			const response = await axios.post(
 				"https://phone-line-backend.onrender.com/terminate-user",
 				{
@@ -511,14 +513,14 @@ const AllUsersTable = () => {
 			if (response.data.status === "Success") {
 				setLoadingStates((prevState) => ({
 					...prevState,
-					[index]: false,
+					[simNumber]: false, // Set loading to false
 				}));
 				toast.success(response.data.message);
-				getallUsersData(); // Optionally, refresh the UI or data
+				getallUsersData(); // Refresh the data if needed
 			} else {
 				setLoadingStates((prevState) => ({
 					...prevState,
-					[index]: false,
+					[simNumber]: false, // Set loading to false
 				}));
 				console.error("API response error:", response.data);
 				toast.error(response.data.message);
@@ -526,7 +528,7 @@ const AllUsersTable = () => {
 		} catch (error) {
 			setLoadingStates((prevState) => ({
 				...prevState,
-				[index]: false,
+				[simNumber]: false, // Set loading to false on error
 			}));
 			console.error("Error terminating user:", error.message);
 			toast.error(error.message);
@@ -773,18 +775,19 @@ const AllUsersTable = () => {
 												<td className="py-2 px-3 text-base font-normal whitespace-nowrap">
 													<button
 														type="button"
-														onClick={() => {
+														onClick={() =>
 															terminateUser(
 																sim?.domainUserId,
 																sim?.userId,
-																simIndex,
+																sim?.simNumber,
 																sim?.status,
-															);
-														}}
+															)
+														}
 														className="bg-[#B40000] rounded-3xl text-white py-1 px-4"
+														disabled={loadingStates[sim.simNumber]} // Disable button while loading
 													>
-														{loadingStates[simIndex]
-															? "Terminating"
+														{loadingStates[sim.simNumber]
+															? "Terminating..."
 															: "Terminate User"}
 													</button>
 												</td>

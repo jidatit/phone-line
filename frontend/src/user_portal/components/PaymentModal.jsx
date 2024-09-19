@@ -12,7 +12,7 @@ import { toast, ToastContainer } from "react-toastify";
 const schema = z.object({
 	amount: z.coerce
 		.number()
-		.min(1, "Amount is required and must be greater than 0"),
+		.min(100, "Amount is required and must be greater than 100"),
 	cardName: z.string().min(1, "Name on Credit Card is required"),
 	cardNumber: z
 		.string()
