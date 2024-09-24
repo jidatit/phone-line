@@ -299,10 +299,13 @@ const PaymentsTable = () => {
 
 		// biome-ignore lint/complexity/noForEach: <explanation>
 		data.forEach((item) => {
-			if (!result[item.name]) {
-				result[item.name] = [];
+			// Create a unique key by combining the name and userId
+			const uniqueKey = `${item.name}_${item.userId}`;
+
+			if (!result[uniqueKey]) {
+				result[uniqueKey] = [];
 			}
-			result[item.name].push({
+			result[uniqueKey].push({
 				simNumber: item.simNumber,
 				ilNumber: item.ilNumber,
 				usNumber: item.usNumber,
@@ -452,7 +455,7 @@ const PaymentsTable = () => {
 															rowSpan={sims.length}
 															className={`py-2 px-3 font-bold text-base border-t whitespace-nowrap `}
 														>
-															{name || "-"}
+															{name.split("_")[0] || "-"}
 														</td>
 													</>
 												)}
