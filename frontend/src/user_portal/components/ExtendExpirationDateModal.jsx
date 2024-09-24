@@ -46,33 +46,25 @@ const ExtendExpirationDateModal = ({ open, onClose, userId, simNumber }) => {
 		const fetchStartDate = async () => {
 			setLoading(true);
 			try {
-				console.log("Fetching start date...");
-
 				const userDocRef = doc(db, "users", userId);
 				const userDoc = await getDoc(userDocRef);
 
 				if (userDoc.exists()) {
-					console.log("User document exists.");
-
 					const userData = userDoc.data();
-					console.log("User data: ", userData);
 
 					const activatedNumbers = userData.activatedNumbers || {};
-					console.log("Activated numbers: ", activatedNumbers);
 
 					const simData = activatedNumbers[simNumber] || {};
-					console.log("SIM data: ", simData);
 
 					const types = ["US", "IL"];
 					let foundEndDate = null;
 
 					for (const type of types) {
 						const typeData = simData[type] || [];
-						console.log(`Type data (${type}): `, typeData);
 
 						if (typeData.length > 0) {
 							foundEndDate = typeData[0].endDate;
-							console.log(`End date found for type ${type}: `, foundEndDate);
+
 							break;
 						}
 					}
@@ -114,11 +106,9 @@ const ExtendExpirationDateModal = ({ open, onClose, userId, simNumber }) => {
 				if (userDoc.exists()) {
 					const userData = userDoc.data();
 					const currentBalance = userData.balance || 0;
-					console.log("balance", currentBalance);
 
 					// Calculate the charges
 					const charge = await calculateCharges(minDate, endDate);
-					console.log("charge", charge);
 
 					// Check if there is sufficient balance
 					if (!hasSufficientBalance(currentBalance, charge)) {

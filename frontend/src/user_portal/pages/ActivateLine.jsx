@@ -87,9 +87,8 @@ const ActivateLine = () => {
 
 		const userData = userDoc.data();
 		const currentBalance = userData.balance || 0;
-		console.log("balance", currentBalance);
+
 		const charge = await calculateCharges(startDate, endDate);
-		console.log("charge", charge);
 
 		if (!hasSufficientBalance(currentBalance, charge)) {
 			toast.error("Insufficient balance for SIM activation");
@@ -328,7 +327,6 @@ const ActivateLine = () => {
 											const startOfDay = dayjs(newValue)
 												.tz("Asia/Jerusalem")
 												.startOf("day");
-											console.log("date", startOfDay);
 
 											setStartDate(startOfDay.toDate()); // Save the date object
 
@@ -352,8 +350,7 @@ const ActivateLine = () => {
 											const endOfDay = dayjs(newValue)
 												.tz("Asia/Jerusalem")
 												.endOf("day");
-											console.log("end", endOfDay);
-											console.log(endOfDay.toDate());
+
 											setEndDate(endOfDay.toDate()); // Save the date object
 										}
 									}}

@@ -559,12 +559,15 @@ const AllUsersTable = () => {
 	const transformData = (data) => {
 		const result = {};
 
-		// biome-ignore lint/complexity/noForEach: <explanation>
 		data.forEach((item) => {
-			if (!result[item.name]) {
-				result[item.name] = [];
+			// Create a unique key by combining the name and userId
+			const uniqueKey = `${item.name}_${item.userId}`;
+
+			if (!result[uniqueKey]) {
+				result[uniqueKey] = [];
 			}
-			result[item.name].push({
+
+			result[uniqueKey].push({
 				domainUserId: item.domainUserId,
 				simNumber: item.simNumber,
 				ilNumber: item.ilNumber,
@@ -580,9 +583,7 @@ const AllUsersTable = () => {
 	};
 
 	// Example usage:
-
 	const groupedData = transformData(rowsToShow);
-
 	return (
 		<>
 			<ToastContainer />
@@ -701,9 +702,8 @@ const AllUsersTable = () => {
 													<td
 														rowSpan={sims.length}
 														className="py-2 px-3 font-bold text-base border-t whitespace-nowrap"
-														// Adjusting the background for the name cell as well
 													>
-														{name || "-"}
+														{name.split("_")[0] || "-"}
 													</td>
 												)}
 

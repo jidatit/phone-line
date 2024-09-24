@@ -38,7 +38,6 @@ const PaymentModal = ({ open, handleClose }) => {
 	const onSubmit = async (data) => {
 		try {
 			// Handle payment logic here after getting the token from CardKnox
-			console.log("Payment data to be processed", data);
 
 			// Add logic here to send the token along with other payment details to your server
 
