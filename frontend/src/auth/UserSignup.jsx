@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@mui/material";
 import { auth, db } from "../../Firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -35,34 +35,39 @@ const UserSignup = () => {
 				return;
 			}
 
-			// Firebase signup	 using email and password
+			// Firebase signup using email and password
 			const { user } = await createUserWithEmailAndPassword(
 				auth,
 				userData.email,
 				password,
 			);
 
-			// Store user data in Firestore
-			await setDoc(doc(db, "users", user.uid), {
-				...userDataWithoutPasswords,
+			try {
+				// Store user data in Firestore
+				await setDoc(doc(db, "users", user.uid), {
+					...userDataWithoutPasswords,
+					balance: 0,
+				});
 
-				// status: "Pending", // Initial status as Pending
-				balance: 0,
-			});
+				// Show success message and reset form
+				setUserData({
+					name: "",
+					email: "",
+					phoneNumber: "",
+					password: "",
+					confirmPassword: "",
+				});
 
-			// Show success message and reset form
+				// Navigate to user portal
+				navigate("/user_portal");
+				toast.success("User Registered");
+			} catch (firestoreError) {
+				await deleteUser(user);
 
-			setUserData({
-				name: "",
-				email: "",
-				phoneNumber: "",
-				password: "",
-				confirmPassword: "",
-			});
-
-			// Navigate to user portal
-			navigate("/user_portal");
-			toast.success("User Registered");
+				toast.error(
+					`Failed to store user data. User has been removed.${firestoreError}`,
+				);
+			}
 		} catch (error) {
 			// Handle any errors during the signup process
 			toast.error(error.message);
