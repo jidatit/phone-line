@@ -134,77 +134,84 @@ const AllUsersTable = () => {
 
 	const getallUsersData = async () => {
 		try {
-			// Fetching all users from Firestore
 			const usersCollectionRef = collection(db, "users");
 			const querySnapshot = await getDocs(usersCollectionRef);
 
-			// Initialize an array to hold the transformed data
 			const usersData = [];
 
-			// Iterate over each user document
 			// biome-ignore lint/complexity/noForEach: <explanation>
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
 				const activatedNumbers = data.activatedNumbers || {};
-				const uid = doc.id; // Use the document ID as the user ID
+				const uid = doc.id;
 
-				// Iterate over each simNumber in activatedNumbers
-				for (const [simNumber, numbersByType] of Object.entries(
-					activatedNumbers,
-				)) {
-					// Prepare an object to hold both IL and US numbers
-					let rowData = {
+				// Check if the user has activated numbers
+				if (Object.keys(activatedNumbers).length === 0) {
+					// No activated numbers, create a default row for the user
+					usersData.push({
 						name: data.name || "Unknown Name", // Replace with actual name field if it exists
-						simNumber: simNumber,
-						ilNumber: null,
-						usNumber: null,
-						startDate: null,
-						endDate: null,
-						status: null,
+						simNumber: "",
+						ilNumber: "",
+						usNumber: "",
+						startDate: "",
+						endDate: "",
+						status: "",
 						userId: uid,
-						domainUserId: null,
+						domainUserId: "",
 						currentBalance: data.currentBalance || 0, // Replace with actual balance field if it exists
-					};
+					});
+				} else {
+					// Iterate over each simNumber in activatedNumbers
+					for (const [simNumber, numbersByType] of Object.entries(
+						activatedNumbers,
+					)) {
+						// biome-ignore lint/style/useConst: <explanation>
+						let rowData = {
+							name: data.name || "Unknown Name",
+							simNumber: simNumber,
+							ilNumber: "--",
+							usNumber: "--",
+							startDate: "--",
+							endDate: "--",
+							status: "--",
+							userId: uid,
+							domainUserId: "--",
+							currentBalance: data.currentBalance || 0,
+						};
 
-					// Iterate over each country (IL, US) and its numbers
-					for (const [country, numbers] of Object.entries(numbersByType)) {
-						// Ensure numbers is an array before using forEach
-						if (Array.isArray(numbers)) {
-							// biome-ignore lint/complexity/noForEach: <explanation>
-							numbers.forEach((num) => {
-								// Check if num.startDate and num.endDate are Firestore Timestamps
-								const purchaseDate =
-									num.startDate instanceof Timestamp
-										? num.startDate.toDate().toLocaleDateString()
-										: new Date(num.startDate).toLocaleDateString();
+						for (const [country, numbers] of Object.entries(numbersByType)) {
+							if (Array.isArray(numbers)) {
+								// biome-ignore lint/complexity/noForEach: <explanation>
+								numbers.forEach((num) => {
+									const purchaseDate =
+										num.startDate instanceof Timestamp
+											? num.startDate.toDate().toLocaleDateString()
+											: new Date(num.startDate).toLocaleDateString();
 
-								const expireDate =
-									num.endDate instanceof Timestamp
-										? num.endDate.toDate().toLocaleDateString()
-										: new Date(num.endDate).toLocaleDateString();
+									const expireDate =
+										num.endDate instanceof Timestamp
+											? num.endDate.toDate().toLocaleDateString()
+											: new Date(num.endDate).toLocaleDateString();
 
-								// Add the number data to rowData
-								if (country === "IL") {
-									rowData.ilNumber = num.number;
-								} else if (country === "US") {
-									rowData.usNumber = num.number;
-								}
+									if (country === "IL") {
+										rowData.ilNumber = num.number;
+									} else if (country === "US") {
+										rowData.usNumber = num.number;
+									}
 
-								// Update other common fields
-								rowData.startDate = purchaseDate;
-								rowData.endDate = expireDate;
-								rowData.status = num.Activated;
-								rowData.domainUserId = num.domainUserId;
-							});
+									rowData.startDate = purchaseDate;
+									rowData.endDate = expireDate;
+									rowData.status = num.Activated || "--";
+									rowData.domainUserId = num.domainUserId || "--";
+								});
+							}
 						}
-					}
 
-					// Push the combined row data for this simNumber
-					usersData.push(rowData);
+						usersData.push(rowData);
+					}
 				}
 			});
 
-			// Set the transformed data to state
 			setAllUsersData(usersData);
 		} catch (error) {
 			console.error("Error fetching users data: ", error);
@@ -309,108 +316,7 @@ const AllUsersTable = () => {
 			sortOrder: event.target.value,
 		}));
 	};
-	const handleDeactivateNumber = async (number, uid) => {
-		try {
-			// Make the API request to deactivate the number
-			const apiResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
-					},
-					func_name: "prov_terminate_did",
-					data: {
-						number,
-					},
-				},
-			);
 
-			// Check if the deactivation was successful
-			if (apiResponse.data.status === "OK") {
-				// Get the current data from Firestore
-				const userDocRef = doc(db, "users", uid);
-				const userDoc = await getDoc(userDocRef);
-				if (userDoc.exists()) {
-					const data = userDoc.data();
-					const activatedNumbers = data.activatedNumbers || {};
-
-					// Remove the deactivated number from the user's data
-					for (const type in activatedNumbers) {
-						activatedNumbers[type] = activatedNumbers[type].filter(
-							(num) => num.number !== number,
-						);
-					}
-
-					// Update Firestore with the modified data
-					await updateDoc(userDocRef, {
-						activatedNumbers,
-					});
-					getallUsersData();
-
-					//console.log(
-					// "Number deactivated and removed from Firestore successfully",
-					// );
-				} else {
-					console.error("User document not found");
-				}
-			} else {
-				console.error("Failed to deactivate the number");
-				toast.error("Failed to deactivate the number");
-			}
-		} catch (error) {
-			console.error("Error handling number deactivation:", error.message);
-			toast.error(error.message);
-		}
-	};
-	const deactivateByICCID = async (iccid, endpointId, userId) => {
-		try {
-			// Make the API request to deactivate the mobile number using the endpoint ID
-			const apiResponse = await axios.post(
-				"https://widelyapp-api-02.widelymobile.com:3001/api/v2/temp_prev/",
-				{
-					auth: {
-						auth_id: authId,
-						hash: hash,
-						auth: authAccount,
-					},
-					func_name: "prov_terminate_mobile",
-					data: { endpoint_id: endpointId },
-				},
-			);
-
-			// If the API response indicates success
-			if (apiResponse.data.status === "OK") {
-				const userDocRef = doc(db, "users", userId);
-				const userDoc = await getDoc(userDocRef);
-
-				if (userDoc.exists()) {
-					const activatedNumbers = userDoc.data().activatedNumbers;
-
-					// Update the status of the numbers associated with the ICCID to "Pending"
-					const updatedNumbers = {};
-					for (let type in activatedNumbers) {
-						updatedNumbers[type] = activatedNumbers[type].map((num) => {
-							if (num.simNumber === iccid) {
-								return { ...num, Activated: "Deactivated" };
-							}
-							return num;
-						});
-					}
-
-					// Update the Firestore document with the new status
-					await updateDoc(userDocRef, { activatedNumbers: updatedNumbers });
-
-					// Optionally, refresh the UI or data
-					getallUsersData();
-				}
-			}
-		} catch (error) {
-			console.error("Error deactivating ICCID:", error.message);
-			toast.error(error.message);
-		}
-	};
 	// const terminateUser = async (domainUserId, userId,index) => {
 	// 	try {
 	// 		setLoadingStates((prevState) => ({
@@ -485,6 +391,10 @@ const AllUsersTable = () => {
 	// 	}
 	// };
 	const terminateUser = async (domainUserId, userId, simNumber, activated) => {
+		if (!domainUserId) {
+			toast.error("No activated sim");
+			return;
+		}
 		if (activated === "Deactivated") {
 			toast.error("User is already terminated");
 			return;
@@ -559,6 +469,7 @@ const AllUsersTable = () => {
 	const transformData = (data) => {
 		const result = {};
 
+		// biome-ignore lint/complexity/noForEach: <explanation>
 		data.forEach((item) => {
 			// Create a unique key by combining the name and userId
 			const uniqueKey = `${item.name}_${item.userId}`;
@@ -726,12 +637,16 @@ const AllUsersTable = () => {
 												<td
 													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
 												>
-													{dayjs(sim.startDate).format("DD-MM-YYYY") || "-"}
+													{sim?.startDate
+														? dayjs(sim.startDate).format("DD-MM-YYYY")
+														: "-"}
 												</td>
 												<td
 													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}
 												>
-													{dayjs(sim.endDate).format("DD-MM-YYYY") || "-"}
+													{sim?.endDate
+														? dayjs(sim.endDate).format("DD-MM-YYYY")
+														: "-"}
 												</td>
 												<td
 													className={`py-2 px-3 font-normal text-base border-t whitespace-nowrap`}

@@ -30,7 +30,7 @@ const ActivateLine = () => {
 	const Today = dayjs().tz("Asia/Jerusalem");
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(Today);
-	const [endDate, setEndDate] = useState(dayjs());
+	const [endDate, setEndDate] = useState(dayjs().add(1, "day"));
 	const [simNumberState, setSimNumberState] = useState(true);
 	const [datePickerState, setDatePickerState] = useState(false);
 	const [displayNumbers, setDisplayNumbers] = useState(false);
@@ -77,18 +77,17 @@ const ActivateLine = () => {
 	};
 
 	const activateSim = async (startDateZ, endDateZ) => {
-		// Fetch user document from Firestore
 		const userDocRef = doc(db, "users", userId);
 		const userDoc = await getDoc(userDocRef);
 
 		if (!userDoc.exists()) {
+			toast.error("User document not found");
 			throw new Error("User document not found");
 		}
 
 		const userData = userDoc.data();
 		const currentBalance = userData.balance || 0;
-
-		const charge = await calculateCharges(startDate, endDate);
+		const charge = await calculateCharges(startDateZ, endDateZ);
 
 		if (!hasSufficientBalance(currentBalance, charge)) {
 			toast.error("Insufficient balance for SIM activation");
@@ -98,8 +97,6 @@ const ActivateLine = () => {
 
 		try {
 			setLoading(true);
-
-			// console.log(startDateZ, endDateZ);
 
 			const response = await axios.post(
 				"https://phone-line-backend.onrender.com/activate-sim",
@@ -120,7 +117,6 @@ const ActivateLine = () => {
 
 			if (step1.status === "Failed") {
 				toast.error(`Step 1 failed: ${step1.error}`);
-
 				setLoading(false);
 				handleReset();
 				return;
@@ -130,12 +126,20 @@ const ActivateLine = () => {
 				toast.error(`Step 2 failed: ${step2.error}`);
 				setLoading(false);
 				handleReset();
-				setShowToast(false);
 				return;
 			}
 
-			if (step3.status === "Success") {
-				console.log("modified");
+			if (step2.status === "Success") {
+				try {
+					await updateBalanceAfterActivation(
+						userDocRef,
+						currentBalance,
+						charge,
+					);
+					toast.success("Balance updated successfully.");
+				} catch (balanceError) {
+					toast.error("Failed to update balance. Please try again.");
+				}
 			}
 
 			if (step3.status === "Failed") {
@@ -143,20 +147,14 @@ const ActivateLine = () => {
 				toast.error(`Step 3 failed: ${step3.error}`);
 			} else {
 				toast.success("SIM activation successful and caller ID modified");
+				setNumbers(step2.numbers);
+				setDisplayNumbers(true);
 			}
-
-			if (step2.status === "Success") {
-				updateBalanceAfterActivation(userDocRef, currentBalance, charge);
-			}
-
-			// Show the numbers obtained from the API
-			setNumbers(step2.numbers);
-			setDisplayNumbers(true);
 
 			setLoading(false);
 		} catch (error) {
 			console.error("Unexpected error during SIM activation:", error.message);
-			toast.error(error.message);
+			toast.error("An error occurred during SIM activation. Please try again.");
 			setLoading(false);
 			handleReset();
 		}
@@ -183,7 +181,6 @@ const ActivateLine = () => {
 				setCharges(chargeAmount);
 			} catch (err) {
 				toast.error("Failed to get Charges");
-			} finally {
 			}
 		};
 
@@ -324,9 +321,9 @@ const ActivateLine = () => {
 									onChange={(newValue) => {
 										if (newValue) {
 											// Set the time to the start of the day in Israel timezone
-											const startOfDay = dayjs(newValue)
-												.tz("Asia/Jerusalem")
-												.startOf("day");
+											const startOfDay = dayjs(newValue);
+											// .tz("Asia/Jerusalem")
+											// .startOf("day");
 
 											setStartDate(startOfDay.toDate()); // Save the date object
 
@@ -346,15 +343,14 @@ const ActivateLine = () => {
 									value={dayjs(endDate)}
 									onChange={(newValue) => {
 										if (newValue) {
-											// Set the time to 11:59 PM in Israel timezone
-											const endOfDay = dayjs(newValue)
-												.tz("Asia/Jerusalem")
-												.endOf("day");
+											const endOfDay = dayjs(newValue);
+											// .tz("Asia/Jerusalem")
+											// .endOf("day");
 
-											setEndDate(endOfDay.toDate()); // Save the date object
+											setEndDate(endOfDay.toDate());
 										}
 									}}
-									minDate={dayjs(startDate).add(1, "day")} // Ensure the end date is always after the start date
+									minDate={dayjs(startDate).add(1, "day")}
 								/>
 							</LocalizationProvider>
 						</div>

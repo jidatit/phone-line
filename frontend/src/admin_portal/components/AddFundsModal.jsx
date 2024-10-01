@@ -51,23 +51,56 @@ const FundsModal = ({ open, handleClose, userId }) => {
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 		setLoading(true);
+		setError(null);
+
+		const MAX_RETRIES = 3;
+		let attempt = 0;
+
+		const updateBalance = async () => {
+			try {
+				const userDocRef = doc(db, "users", userId);
+
+				const timeoutPromise = new Promise((_, reject) =>
+					setTimeout(() => reject(new Error("Request timed out")), 10000),
+				);
+
+				const updateDocPromise = updateDoc(userDocRef, { balance });
+
+				await Promise.race([updateDocPromise, timeoutPromise]);
+
+				toast.success("Funds Updated");
+				handleClose();
+			} catch (error) {
+				attempt++;
+				if (attempt < MAX_RETRIES) {
+					toast.warning(`Attempt ${attempt} failed. Retrying...`);
+					await updateBalance();
+				} else {
+					toast.error("Error Updating Funds. Please try again later.");
+					console.error(
+						"Error updating balance after multiple attempts:",
+						error,
+					);
+					setError(
+						"Failed to update balance. Please check your internet connection and try again.",
+					);
+				}
+			}
+		};
 
 		try {
-			const userDocRef = doc(db, "users", userId);
-			await updateDoc(userDocRef, { balance: parseFloat(balance) });
-			toast.success("Funds Updated");
-			handleClose(); // Close the modal on successful update
-		} catch (error) {
-			toast.error("Error Updating Funds");
-			console.error("Error updating balance:", error);
-			setError("Failed to update balance.");
+			await updateBalance();
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<Modal open={open} onClose={handleClose} aria-describedby="modal-data">
+		<Modal
+			open={open}
+			onClose={!loading ? handleClose : null}
+			aria-describedby="modal-data"
+		>
 			<Box sx={style}>
 				<div
 					id="modal-data"
@@ -89,6 +122,7 @@ const FundsModal = ({ open, handleClose, userId }) => {
 								onChange={(e) => setBalance(e.target.value)}
 								error={isNaN(balance)}
 								helperText={isNaN(balance) ? "Invalid amount" : ""}
+								disabled={loading} // Disable input during loading
 							/>
 						</div>
 
@@ -98,8 +132,10 @@ const FundsModal = ({ open, handleClose, userId }) => {
 							type="submit"
 							className="w-full"
 							sx={{ backgroundColor: "#FF6D6D", color: "#FFFFFF" }}
+							disabled={loading} // Disable button during loading
 						>
-							Update Balance
+							{loading ? "Updating..." : "Update Balance"}{" "}
+							{/* Show loading state */}
 						</Button>
 					</form>
 				</div>
