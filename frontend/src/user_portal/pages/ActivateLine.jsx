@@ -87,8 +87,7 @@ const ActivateLine = () => {
 
 		const userData = userDoc.data();
 		const currentBalance = userData.balance || 0;
-		const charge = await calculateCharges(startDateZ, endDateZ);
-
+		const charge = await calculateCharges(startDate, endDate);
 		if (!hasSufficientBalance(currentBalance, charge)) {
 			toast.error("Insufficient balance for SIM activation");
 			handleReset();
