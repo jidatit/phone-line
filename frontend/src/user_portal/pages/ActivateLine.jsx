@@ -27,7 +27,7 @@ import {
 } from "../../../utils/calculateCharge";
 const ActivateLine = () => {
 	dayjs.extend(utc);
-	const Today = dayjs().tz("Asia/Jerusalem");
+	const Today = dayjs();
 	const [simNumber, setSimNumber] = useState("");
 	const [startDate, setStartDate] = useState(Today);
 	const [endDate, setEndDate] = useState(dayjs().add(1, "day"));
@@ -45,8 +45,8 @@ const ActivateLine = () => {
 		setSimNumberState(true);
 		setDatePickerState(false);
 		setDisplayNumbers(false);
-		setStartDate(Today);
-		setEndDate(null);
+		setStartDate(dayjs());
+		setEndDate(dayjs().add(1, "day"));
 		setmsg("");
 	};
 
@@ -225,8 +225,13 @@ const ActivateLine = () => {
 
 			const startDateTimeZ = dayjs(startDate)
 				.tz("Asia/Jerusalem")
+				.startOf("day") // Set to the start of the day
 				.toISOString();
-			const endDateTimeZ = dayjs(endDate).tz("Asia/Jerusalem").toISOString();
+
+			const endDateTimeZ = dayjs(endDate)
+				.tz("Asia/Jerusalem")
+				.endOf("day") // Set to the end of the day
+				.toISOString();
 			setDatePickerState(false);
 
 			const userData = await fetchUserData();
@@ -327,9 +332,9 @@ const ActivateLine = () => {
 											setStartDate(startOfDay.toDate()); // Save the date object
 
 											// Ensure end date is not before the new start date
-											if (dayjs(endDate).isBefore(startOfDay)) {
-												setEndDate(startOfDay.add(1, "day").toDate()); // Default end date to a day after the new start date
-											}
+											// if (dayjs(endDate).isBefore(startOfDay)) {
+											setEndDate(startOfDay.add(1, "day").toDate()); // Default end date to a day after the new start date
+											// }
 										}
 									}}
 									minDate={dayjs().startOf("day")}
