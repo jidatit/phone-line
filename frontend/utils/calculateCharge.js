@@ -49,4 +49,5 @@ export const calculateCharges = async (startDate, endDate) => {
 	return charge;
 };
 
-export const hasSufficientBalance = (balance, charge) => balance >= charge;
+export const hasSufficientBalance = (balance, charge) =>
+	Number(balance) >= Number(charge);

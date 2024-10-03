@@ -164,8 +164,6 @@ const ActivateLine = () => {
 	const handleConfirmSimNumber = (e) => {
 		e.preventDefault();
 		if (simNumber !== "") {
-			console.log("Entered Sim Number is: ", simNumber);
-
 			setSimNumberState(false);
 			setDatePickerState(true);
 		} else {
